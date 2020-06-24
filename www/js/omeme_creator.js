@@ -1,30 +1,13 @@
-//2020
-// Hi, it's Mike from 2020, and I'm using my code from 2015
-// which uses stuff from before that... so ...
-// it's ugly
-//------------------
-
-// this is dependent on an omg object in some paces
-// so load omg.js before loading this in the page 
-
-// this depends on omeme_player.js having been run and 
-// movie.scene having been created
-// should be refactored so MemeCreator creates the MemePlayer instance
-//2020, so I just read the above, that's crazy
+//in June 2020 I revived this beast which was written well before ES6
 
 function MemeCreator(params) {	
 	this.setupTabs();
 	
-	movie.tool = new MemeCanvasEventHandler(this);	
-	movie.scene.canvas.addEventListener("mouseout", movie.tool.mouseout, false);
-	movie.scene.canvas.addEventListener("mousedown", movie.tool.mousedown, false);
-	movie.scene.canvas.addEventListener("mousemove", movie.tool.mousemove, false);
-	movie.scene.canvas.addEventListener("mouseup",   movie.tool.mouseup, false);
-	movie.scene.canvas.addEventListener("touchstart", movie.tool.touchstart, false);
-	movie.scene.canvas.addEventListener("touchmove", movie.tool.touchmove, false);
-	movie.scene.canvas.addEventListener("touchend",   movie.tool.touchend, false);
+	this.player = new OMemePlayer({div: params.playerDiv});
 
 	this.loadParameters();
+
+	
 }
 
 MemeCreator.prototype.setupTabs = function () {
@@ -38,26 +21,24 @@ MemeCreator.prototype.setupTabs = function () {
 			    {mode: "SUBMIT"}
 			    ];
 	
-	tabs.forEach(function (tab, i) {
+	tabs.forEach((tab, i) => {
 		tab.div = document.getElementById(tab.mode.toLowerCase() + "-tab");
 		tab.pageDiv = document.getElementById(tab.mode.toLowerCase() + "-page");
-		tab.div.onclick = function () {
-			tabs.forEach(function (tab2) {
+		tab.div.onclick = () => {
+			tabs.forEach((tab2) => {
 				tab2.div.className = "main-tab";
 				tab2.pageDiv.style.display = "none";
 			});
 			
 			mc.showTab(tab);
-			movie.scene.mode = tab.mode;
+			this.movie.scene.mode = tab.mode;
 			
 			tab.div.className = "selected-main-tab";
 			tab.pageDiv.style.display = "block";
 		};
-		
 	});
 
-	tabs[0].div.onclick();
-	
+	this.tabs = tabs
 };
 
 MemeCreator.prototype.showTab = function (tab) {
@@ -78,7 +59,7 @@ MemeCreator.prototype.showTab = function (tab) {
 	}
 	if (tab.mode == "SUBMIT") {
 		document.getElementById("post-button").onclick = () => {
-			omg.server.post(getJSON(), result => {
+			omg.server.post(this.player.getJSON(), result => {
 				console.log(result)
 			});
 		}
@@ -89,7 +70,8 @@ MemeCreator.prototype.showTab = function (tab) {
 MemeCreator.prototype.showDoodleTab = function (tab) {
 	if (tab.shown)
 		return;
-	
+
+	var movie = this.movie
 	movie.scene.doodles.currentWidth = 6;
 	
 	for (var ic = 0; ic < movie.colors.length; ic++) {
@@ -120,6 +102,7 @@ MemeCreator.prototype.showDoodleTab = function (tab) {
 };
 
 MemeCreator.prototype.makeDoodleColorBox = function (i) {
+	var movie = this.movie
 	var colorBox = document.createElement("div");
 	colorBox.className = "doodle-color-box";
 	colorBox.style.backgroundColor = movie.colors[i];
@@ -177,7 +160,6 @@ MemeCreator.prototype.showBackgroundTab = function (tab) {
 	
 	var userList = tab.pageDiv.getElementsByClassName("row-list")[0];
 	
-	//todo port2020 look for my type=IMAGE?
 	omg.server.getHTTP("/data/?type=IMAGE", function (results) {
 		var details = results;
 		for (var idtl = 0; idtl < details.length; idtl++) {
@@ -211,11 +193,11 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 	var newRow = document.createElement("img"); //omg.newDiv();
 	newRow.className = "background-thumbnail";
 	
-	newRow.src = detail.thumbnail;
+	newRow.src = detail.url //detail.thumbnail;
 	
 	var cp = this;
 	newRow.onclick = function () {
-		mc.addCharacterFromFile(detail.thumbnail);
+		mc.addCharacterFromFile(detail.url);
 
 		if (finishCallback) {
 			finishCallback();
@@ -343,9 +325,8 @@ MemeCreator.prototype.addBackdrop = function (src) {
 	
 	var submitInput = document.getElementById("submit-picture-input");
 	submitInput.value = src;
-
-	//TODO not oop 
-	addBackdrop(src, false, errorCallback);
+ 
+	this.player.addBackdrop(src, false, errorCallback);
 
 };
 MemeCreator.prototype.showCharactersTab = function (tab) {
@@ -388,33 +369,20 @@ MemeCreator.prototype.showCharactersTab = function (tab) {
 	this.characterList.errorLoadingDiv = tab.pageDiv.getElementsByClassName("error-loading")[0];
 
 	var character;
-	for (var ic = 0; ic < movie.character.list.length; ic++) {
-		character = movie.character.list[ic];
+	for (var ic = 0; ic < this.movie.character.list.length; ic++) {
+		character = this.movie.character.list[ic];
 		mc.makeCharacterButton(character);
 	}
 	
 	var userList = tab.pageDiv.getElementsByClassName("recent-character-list")[0];
-	//todo port2020
-	omg.server.getHTTP("/artist?id=me&details=SPRITE&details_order=newest", function (puser) {
-		var details = puser.details;
+
+	omg.server.getHTTP("/data/?type=IMAGE", function (results) {
+		var details = results;
 		for (var idtl = 0; idtl < details.length; idtl++) {
 			var newRow = mc.loadCharacterRow(details[idtl], tab.pageDiv.finishCallback)
 			userList.appendChild(newRow);
 		}
-
-		if (details.length == 0) {
-			var serverUrl = window.location.href;
-			serverUrl = serverUrl.slice(0, serverUrl.lastIndexOf("/") + 1);
-			
-			var newRow = mc.loadCharacterRow({thumbnail: serverUrl + "img/dino/car.png"}, tab.pageDiv.finishCallback)
-			userList.appendChild(newRow);
-
-			var newRow = mc.loadCharacterRow({thumbnail: serverUrl + "img/dino/trex_1.png"}, tab.pageDiv.finishCallback)
-			userList.appendChild(newRow);
-						
-		}
 	});
-
 };
 
 MemeCreator.prototype.addCharacterFromFile = function (filename) {
@@ -427,7 +395,8 @@ MemeCreator.prototype.addCharacterFromFile = function (filename) {
 		mc.makeCharacterButton(character);			
 	};
 	
-	addCharacterFromFile(filename, loadCallback, errorCallback);
+	console.log(filename)
+	this.player.addCharacterFromFile(filename, loadCallback, errorCallback);
 };
 
 MemeCreator.prototype.makeCharacterButton = function (character){
@@ -450,7 +419,7 @@ MemeCreator.prototype.makeCharacterButton = function (character){
 	this.characterList.appendChild(newCanvas);
 	mc.selectListButton(mc.characterList.children, newCanvas, "character-button");
 	
-	drawCharacter(character, 
+	this.player.drawCharacter(character, 
 		newCanvas.width / 2, newCanvas.height - 20, newCanvas.getContext("2d"));			
 
 };
@@ -667,10 +636,10 @@ MemeCreator.prototype.showDialogTab = function (tab) {
 
 	if (!this.dialogList) {
 		
-		movie.dialogInput = document.getElementById("dialog-text")
+		this.dialogInput = document.getElementById("dialog-text")
 		this.dialogList = tab.pageDiv.getElementsByClassName("dialog-list")[0];
 		
-		var dialogList = movie.scene.dialog.list;
+		var dialogList = this.movie.scene.dialog.list;
 		for (var idlg = 0; idlg < dialogList.length; idlg++) {
 			this.addDialog(dialogList[idlg]);
 		}
@@ -755,21 +724,25 @@ MemeCreator.prototype.loadParameters = function () {
 };
 
 MemeCreator.prototype.loadId = function (id) {
-	var mc = this;
-	omg.getOMG(id, function (response) {
-		loadString(response.json);
+	omg.server.getId(id, (response) => {
+		this.player.load(response);
+		this.movie = this.player.movie
+
+		this.tabs[0].div.onclick()
+		this.setupCanvasEvents()
 	});
 };
 
 function MemeCanvasEventHandler(memeCreator) {
 	this.memeCreator = memeCreator;
-	
-	var canvas = movie.scene.canvas;
-	var context = movie.scene.context;	
+
+	var player = memeCreator.player
 	var tool = this;
 	this.started = false;
 	this.drawnSegments = 0;
 	this.looperCounter = 0;
+
+	var movie = memeCreator.movie
 
 	this.touchstart = function (ev) {
 		ev.preventDefault();
@@ -800,21 +773,21 @@ function MemeCanvasEventHandler(memeCreator) {
 
 	this.mousedown = function (ev) {
 		tool.setOffsets();
-		console.log(ev.pageX, movie.scene.canvasOffsetLeft)
 		x = ev.pageX - movie.scene.canvasOffsetLeft;
 		y = ev.pageY - movie.scene.canvasOffsetTop;
 		tool.start(x, y);
 	}
 	this.start = function(x, y){
 		tool.started = true;
+		var char = player.currentCharacter()
 		if (movie.scene.mode == "CHARACTERS"){
-			if (!currentCharacter()){
+			if (!char){
 				tool.started = false;
 				return;
 			}
-			if (currentCharacter().actions && currentCharacter().actions.length > 0){
-				tool.offX = x - currentCharacter().actions[currentCharacter().i][0];
-				tool.offY = y - currentCharacter().actions[currentCharacter().i][1];
+			if (char.actions && char.actions.length > 0){
+				tool.offX = x - char.actions[char.i][0];
+				tool.offY = y - char.actions[char.i][1];
 			}
 			else {
 				tool.offX = 0;
@@ -827,9 +800,9 @@ function MemeCanvasEventHandler(memeCreator) {
 			var time = movie.scene.position;
 			movie.recordPastPlay = true;
 			if (movie.scene.paused){
-				resume();
+				player.resume();
 			}
-			currentCharacter().recordingStarted = time;
+			char.recordingStarted = time;
 			var actions = movie.character.list[movie.character.current].actions;
 			if (!actions){
 				actions =[];
@@ -838,9 +811,9 @@ function MemeCanvasEventHandler(memeCreator) {
 
 			tool.loopCounter = Date.now() - time;
 
-			var cuts = (currentCharacter().i < actions.length && 
-				actions[currentCharacter().i][2] < time) ? 1 : 0;
-			actions.splice(currentCharacter().i, cuts, [x - tool.offX, y - tool.offY, time]);
+			var cuts = (char.i < actions.length && 
+				actions[char.i][2] < time) ? 1 : 0;
+			actions.splice(char.i, cuts, [x - tool.offX, y - tool.offY, time]);
 
 		}
 		else if (movie.scene.mode == "DIALOG"){
@@ -851,10 +824,10 @@ function MemeCanvasEventHandler(memeCreator) {
 			var time = movie.scene.position;
 			movie.recordPastPlay = true;
 			if (movie.scene.paused){
-				resume();
+				memeCreator.player.resume();
 			}
 			tool.loopCounter = Date.now() - time;
-			var text = movie.dialogInput.value;
+			var text = memeCreator.dialogInput.value;
 			tool.dialog = {"text": text, data: [[x, y, time]], i: 0};
 			movie.scene.dialog.list[movie.scene.dialog.list.length] = tool.dialog;
 			movie.scene.dialog.list.sort(function(a,b){return a.data[0][2] - b.data[0][2]});
@@ -872,14 +845,14 @@ function MemeCanvasEventHandler(memeCreator) {
 		}
 	};
 
-	this.mousemove = function (ev) {
+	this.mousemove = ev => {
 		tool.setOffsets();
 		x = ev.pageX - movie.scene.canvasOffsetLeft;
 		y = ev.pageY - movie.scene.canvasOffsetTop;
 		tool.move(x, y);
 		if (!tool.started) {
-			if (movie.scene.mode == "CHARACTERS" && currentCharacter()){
-				if (!currentCharacter().actions || currentCharacter().actions.length == 0){
+			if (movie.scene.mode == "CHARACTERS" && player.currentCharacter()){
+				if (!player.currentCharacter().actions || player.currentCharacter().actions.length == 0){
 					movie.character.x = x;
 					movie.character.y = y;
 				}
@@ -890,7 +863,7 @@ function MemeCanvasEventHandler(memeCreator) {
 			if (movie.scene.mode == "DIALOG") {
 				movie.scene.dialog.x = x;
 				movie.scene.dialog.y = y;
-				movie.scene.dialog.text = movie.dialogInput.value || "Put Text Here";
+				movie.scene.dialog.text = memeCreator.dialogInput.value || "Put Text Here";
 			}
 		} 
 	}
@@ -911,12 +884,13 @@ function MemeCanvasEventHandler(memeCreator) {
 	this.move = function(x, y){
 		if (tool.started) {
 			if (movie.scene.mode == "CHARACTERS"){
+				var char = player.currentCharacter()
 				var actions = movie.character.list[movie.character.current].actions;
 				var time = Date.now() - tool.loopCounter;
-				var cuts = (currentCharacter().i+1 < actions.length && 
-					actions[currentCharacter().i+1][2] < time) ? 1 : 0;
-				actions.splice(currentCharacter().i+1, cuts, [x - tool.offX, y - tool.offY, time]);			
-				currentCharacter().i++;
+				var cuts = (char.i+1 < actions.length && 
+					actions[char.i+1][2] < time) ? 1 : 0;
+				actions.splice(char.i+1, cuts, [x - tool.offX, y - tool.offY, time]);			
+				char.i++;
 			}
 			else if (movie.scene.mode == "DIALOG"){
 				tool.dialog.data[tool.dialog.data.length] = [x, y, Date.now() - tool.loopCounter];
@@ -951,7 +925,7 @@ function MemeCanvasEventHandler(memeCreator) {
 
 				setTimeout(function(){
 					if (movie.scene.paused){
-						playButton();
+						player.playButton();
 					}
 				}, 20);
 
@@ -1086,11 +1060,13 @@ MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (tool){
 };
 
 MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
+	var movie = this.memeCreator.movie
+	var tool = this
 	var time = movie.scene.position;
 	var doodles = movie.scene.doodles;
 	movie.recordPastPlay = true;
 	if (movie.scene.paused){
-		resume();
+		this.memeCreator.player.resume();
 	}
 	tool.loopCounter = Date.now() - time;
 
@@ -1104,12 +1080,13 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 	tool.t = Date.now();
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
-	tool.doodle.data.push([x, y, Date.now() - tool.loopCounter]);
+	this.doodle.data.push([x, y, Date.now() - this.loopCounter]);
 };
 MemeCanvasEventHandler.prototype.doodleTouchEnd = function (tool){
 
+	var movie = this.memeCreator.movie
 	movie.recordPastPlay = false;
-	setTimeout(function(){
+	setTimeout(() => {
 		if (movie.scene.paused){
 			
 			//playButton();
@@ -1186,3 +1163,17 @@ MemeCanvasEventHandler.prototype.videoTouchEnd = function (tool) {
 		}
 	}, 20);
 };
+
+
+MemeCreator.prototype.setupCanvasEvents = function () {
+	var tool = new MemeCanvasEventHandler(this);
+	var canvas = this.player.sceneCanvas
+	canvas.addEventListener("mouseout", tool.mouseout, false);
+	canvas.addEventListener("mousedown", tool.mousedown, false);
+	canvas.addEventListener("mousemove", tool.mousemove, false);
+	canvas.addEventListener("mouseup",   tool.mouseup, false);
+	canvas.addEventListener("touchstart", tool.touchstart, false);
+	canvas.addEventListener("touchmove", tool.touchmove, false);
+	canvas.addEventListener("touchend",   tool.touchend, false);
+	
+}

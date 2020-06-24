@@ -23,7 +23,7 @@ body {
 	display:inline-block;
 	width:12%;
 	text-align:center;
-	border:1px solid #808080;
+	border:1px solid black;
 	border-bottom:1px solid black;
 	padding:10px;
 	background: #222222;;
@@ -36,7 +36,7 @@ body {
 	cursor:pointer;
 }
 .selected-main-tab {
-	border:1px solid black;
+	border:1px solid #808080;
 	border-bottom:0px;
 	background: #444444;;
 	cursor:default;
@@ -77,7 +77,7 @@ body {
 
 input {
 	font: 13px Helvetica, arial, freesans, clean, sans-serif;
-	width:500px;
+	width:100%;
 }
 
 .selected-character-button, .character-button {

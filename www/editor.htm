@@ -378,7 +378,7 @@
 
 <script src="/omg.js"></script>
  
-<script src="js/omeme_player.js"></script>
+<script src="js/omeme_player2.js"></script>
 <script src="js/omeme_creator.js"></script>
 
 <script src="/js/omgservice.js"></script>
@@ -403,14 +403,11 @@ var imgInput = document.getElementById("picture-input");
 var youtubeInput = document.getElementById("youtube-input");
 
 var memePlayerDiv = document.getElementById("preview-window");
-var memePlayer;
-memePlayer = new MemePlayer({div: memePlayerDiv});
-	
-	
+
 setupLayout(memePlayerDiv);	
 	
 	
-var memeCreator = new MemeCreator();
+var memeCreator = new MemeCreator({playerDiv: memePlayerDiv});
 	
 
 function setupLayout(previewWindow) {
