@@ -1,17 +1,23 @@
+"use strict";
+
 //in June 2020 I revived this beast which was written well before ES6
 
 function MemeCreator(params) {	
 	this.url = "/apps/meme/" //todo make this smarter?
 	this.setupTabs();
 
+	//todo make this a color picker or something
+	this.colors = ["#FFFFFF", "#808080", "#FF0000", "#FFFF00", 
+				  "#00FF00", "#00FFFF", "#0000FF", "#800080"]
+
 	this.playSeekControls = document.getElementById("play-seek-controls")
+	this.playhead = document.getElementById("playhead")
+	this.layersDiv = document.getElementById("layer-list")
+
 	this.player = new OMemePlayer({div: params.playerDiv, controlsDiv: this.playSeekControls});
+	this.player.onupdateposition = (position) => this.updatePlayhead(position)
 
 	this.loadParameters();
-
-	this.layersDiv = document.getElementById("layer-list")
-	this.playhead = document.getElementById("playhead")
-	this.player.onupdateposition = (position) => this.updatePlayhead(position)
 
 	this.setupPanels()
 }
@@ -77,13 +83,14 @@ MemeCreator.prototype.showDoodleTab = function (tab) {
 	if (tab.shown)
 		return;
 
+	this.doodles = {}
 	this.doodles.currentWidth = 6;
 	
 	for (var ic = 0; ic < this.colors.length; ic++) {
 		tab.pageDiv.appendChild(this.makeDoodleColorBox(ic));
 	}
 	
-	pp = document.createElement("span");
+	var pp = document.createElement("span");
 	pp.innerHTML = "<br/>Line Width:";
 	tab.pageDiv.appendChild(pp);
 	
@@ -99,7 +106,7 @@ MemeCreator.prototype.showDoodleTab = function (tab) {
 		}
 		select.add(option);
 	}
-	select.onchange = function () {
+	select.onchange = () => {
 		this.doodles.currentWidth = parseInt(select.value); 
 	};
 	tab.pageDiv.appendChild(select);
@@ -110,7 +117,7 @@ MemeCreator.prototype.makeDoodleColorBox = function (i) {
 	var colorBox = document.createElement("div");
 	colorBox.className = "doodle-color-box";
 	colorBox.style.backgroundColor = this.colors[i];
-	colorBox.onclick = function () {
+	colorBox.onclick = () => {
 		var offs = 5;
 		if (this.doodles.currentColorBox){ 
 			var oldColor = this.doodles.currentColorBox;
@@ -121,7 +128,7 @@ MemeCreator.prototype.makeDoodleColorBox = function (i) {
 
 		newColor.className = "selected-doodle-color-box";
 		newColor.style.zIndex = 1;
-		this.doodles.currentColor = i;
+		this.doodles.currentColor = this.colors[i];
 		this.doodles.currentColorBox = newColor;
 	};
 	return colorBox;	
@@ -261,50 +268,6 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 
 	this.soundList = tab.pageDiv.getElementsByClassName("row-list")[0];
 	
-	var addButton = tab.pageDiv.getElementsByClassName("add-button")[0];
-	addButton.onclick = function () {
-		
-		var addSoundDialog = document.getElementById("add-sound-page");
-		var params = {};
-		params.dialog = addSoundDialog;
-		mc.showAddSoundDialog(addSoundDialog, tab);
-		mc.showDialog(params);
-	};
-	
-	var createButton = tab.pageDiv.getElementsByClassName("create-music-button")[0];
-	createButton.onclick = function () {
-		mc.showOMGBam({command: "new",
-			type : "SECTION"});
-	};	
-	
-	var searchButton = tab.pageDiv.getElementsByClassName("search-omg")[0];
-	searchButton.onclick = function () {
-		
-		var dialog = document.getElementById("search-omg-dialog");
-		var params = {};
-		params.dialog = dialog;
-		
-		var omgSearch = new OMGSearch(dialog, 
-				["AUDIO","SONG","SECTION","MELODY","DRUMBEAT","BASSLINE"], function (result) {
-			
-			var sound;
-			if (result.type == "AUDIO") {
-				sound = addSoundFile(JSON.parse(result.json).url);
-			}
-			else {
-				var omgsong = oMemePlayer.player.makeOMGSong(JSON.parse(result.json));
-				sound = addOpenMusicSong(omgsong);
-			} 
-			mc.makeSoundButton(sound);					
-			
-			if (dialog.finishCallback) {
-				dialog.finishCallback();
-			}
-		});
-		
-		mc.showDialog(params);
-	};
-
 };
 
 MemeCreator.prototype.showAddSoundDialog = function (pageDiv, tab) {
@@ -463,12 +426,15 @@ MemeCreator.prototype.makeSoundButton = function (sound){
 
 MemeCreator.prototype.showDialogTab = function (tab) {
 
-	if (!this.dialogList) {
-		
+	if (!this.dialogInput) {
 		this.dialogInput = document.getElementById("dialog-text")
-		this.dialogList = tab.pageDiv.getElementsByClassName("dialog-list")[0];
-		
 	}
+
+	this.preview = this.newDialog()
+
+	//todo unselect current layer
+
+	this.player.preview = this.preview
 
 };
 
@@ -519,9 +485,9 @@ MemeCreator.prototype.showDialog = function (params) {
 	};
 };
 
-MemeCreator.prototype.addDialog = function (dialog) {
+MemeCreator.prototype.makeDialogLayerDiv = function (dialog) {
 	
-	var layer = this.addLayer({type: "DIALOG", dialog})
+	var layer = this.addLayer(dialog)
 	var img = document.createElement("img")
 	img.style.verticalAlign = "middle"
 	img.src = this.url + "img/dialog.png"
@@ -540,7 +506,7 @@ MemeCreator.prototype.addDialog = function (dialog) {
 		dialog.text = newDialogInput.value;
 	};
 
-	dialog.refreshLayer = () => this.drawActions(dialog.data, layer.detailCanvas)
+	dialog.refreshLayer = () => this.drawActions(dialog.xyt, layer.detailCanvas)
 	dialog.refreshLayer()
 };
 
@@ -600,7 +566,7 @@ MemeCreator.prototype.setupLayers = function () {
 				this.makeCharacterButton(character, layerDiv)
 				break
 			case "DIALOG":
-				this.addDialog(layer.dialog);
+				this.makeDialogLayerDiv(layer.dialog);
 				break
 		}
 	})
@@ -611,6 +577,7 @@ function MemeCanvasEventHandler(memeCreator) {
 	this.memeCreator = memeCreator;
 
 	var player = memeCreator.player
+	this.player = player
 	var tool = this;
 	this.started = false;
 	this.drawnSegments = 0;
@@ -631,7 +598,8 @@ function MemeCanvasEventHandler(memeCreator) {
 	}
 	this.touchend = function (ev) {
 		ev.preventDefault(); 
-		tool.end();
+		tool.end(ev.targetTouches[0].pageX - this.canvasOffsetLeft,
+				ev.targetTouches[0].pageY - this.canvasOffsetTop);
 	}
 
 	this.setOffsets = () => {
@@ -646,14 +614,15 @@ function MemeCanvasEventHandler(memeCreator) {
 
 	this.mousedown = (ev) => {
 		tool.setOffsets();
-		x = ev.pageX - this.canvasOffsetLeft;
-		y = ev.pageY - this.canvasOffsetTop;
-		tool.start(x, y);
+		tool.start(
+			ev.pageX - this.canvasOffsetLeft, 
+			ev.pageY - this.canvasOffsetTop
+		);
 	}
 	this.start = (x, y) => {
 		tool.started = true;
-		var char = player.currentCharacter()
-		if (this.mode == "CHARACTER"){
+		if (this.memeCreator.mode === "CHARACTER"){
+			var char = this.character
 			if (!char){
 				tool.started = false;
 				return;
@@ -671,7 +640,7 @@ function MemeCanvasEventHandler(memeCreator) {
 			this.character.y = -1;
 
 			var time = this.player.position;
-			this.recordPastPlay = true;
+			player.recordPastPlay = true;
 			if (this.player.paused){
 				player.resume();
 			}
@@ -689,42 +658,27 @@ function MemeCanvasEventHandler(memeCreator) {
 			actions.splice(char.i, cuts, [x - tool.offX, y - tool.offY, time]);
 
 		}
-		else if (this.mode == "DIALOG"){
-
-			this.dialog.x = -1;
-			this.dialog.y = -1;
-
-			var time = this.player.position;
-			this.recordPastPlay = true;
-			if (this.player.paused){
-				memeCreator.player.resume();
-			}
-			tool.loopCounter = Date.now() - time;
-			var text = memeCreator.dialogInput.value;
-			tool.dialog = {"text": text, data: [[x, y, time]], i: 0};
-			this.dialog.list[this.dialog.list.length] = tool.dialog;
-			this.dialog.list.sort(function(a,b){return a.data[0][2] - b.data[0][2]});
-			
-			tool.memeCreator.addDialog(tool.dialog);
+		else if (this.memeCreator.mode === "DIALOG"){
+			this.dialogStartTouch(x, y)
 		}
-		else if (this.mode == "DOODLE"){
-			tool.doodleStartTouch(x, y, tool);
+		else if (this.memeCreator.mode === "DOODLE") {
+			this.doodleStartTouch(x, y, tool);
 		}
-		else if (this.mode == "SOUNDTRACK"){
+		else if (this.memeCreator.mode == "SOUNDTRACK"){
 			tool.soundtrackStartTouch(x, y, tool);
 		}
-		else if (this.mode == "VIDEO"){
+		else if (this.memeCreator.mode == "VIDEO"){
 			tool.videoStartTouch(x, y, tool);
 		}
 	};
 
 	this.mousemove = ev => {
 		tool.setOffsets();
-		x = ev.pageX - this.canvasOffsetLeft;
-		y = ev.pageY - this.canvasOffsetTop;
+		var x = ev.pageX - this.canvasOffsetLeft;
+		var y = ev.pageY - this.canvasOffsetTop;
 		tool.move(x, y);
 		if (!tool.started) {
-			if (this.mode == "CHARACTER" && player.currentCharacter()){
+			if (this.memeCreator.mode == "CHARACTER" && player.currentCharacter()){
 				if (!player.currentCharacter().actions || player.currentCharacter().actions.length == 0){
 					this.character.x = x;
 					this.character.y = y;
@@ -733,15 +687,10 @@ function MemeCanvasEventHandler(memeCreator) {
 					this.character.drawSelection = true;
 				}
 			}
-			if (this.mode == "DIALOG") {
-				this.dialog.x = x;
-				this.dialog.y = y;
-				this.dialog.text = memeCreator.dialogInput.value || "Put Text Here";
-			}
 		} 
 	}
-	this.mouseout = function (ev) {
-		if (this.mode === "CHARACTER"){
+	this.mouseout = (ev) => {
+		if (this.memeCreator.mode === "CHARACTER"){
 			x = ev.pageX - this.canvasOffsetLeft;
 			y = ev.pageY - this.canvasOffsetTop;
 			tool.move(x, y);
@@ -749,16 +698,21 @@ function MemeCanvasEventHandler(memeCreator) {
 			this.character.y = -1;
 			this.character.drawSelection = false;
 		}
-		else if (this.mode === "DIALOG") {
-			this.dialog.x = -1;
-			this.dialog.y = -1;	
+		else if (this.memeCreator.mode === "DIALOG") {
+			player.preview.x = -1;
+			player.preview.y = -1;	
 		}
 		
 	};
 
-	this.move = function(x, y){
+	this.move = (x, y) => {
+		if (this.memeCreator.preview) {
+			this.memeCreator.preview.x = x;
+			this.memeCreator.preview.y = y;
+		}
+
 		if (tool.started) {
-			if (this.mode == "CHARACTER"){
+			if (this.memeCreator.mode == "CHARACTER"){
 				var char = player.currentCharacter()
 				var actions = this.character.current.actions;
 				var time = Date.now() - tool.loopCounter;
@@ -767,39 +721,42 @@ function MemeCanvasEventHandler(memeCreator) {
 				actions.splice(char.i+1, cuts, [x - tool.offX, y - tool.offY, time]);			
 				char.i++;
 			}
-			else if (this.mode == "DIALOG"){
-				tool.dialog.data[tool.dialog.data.length] = [x, y, Date.now() - tool.loopCounter];
+			else if (this.memeCreator.mode === "DIALOG"){
+				this.memeCreator.preview.x = x
+				this.memeCreator.preview.y = y
+				this.memeCreator.preview.xyt.push([x, y, Date.now() - this.loopCounter])
 			}
-			else if (this.mode == "DOODLE"){
+			else if (this.memeCreator.mode === "DOODLE"){
 				tool.doodleTouchMove(x, y, tool);
 			}
-			else if (this.mode == "SOUNDTRACK"){
+			else if (this.memeCreator.mode == "SOUNDTRACK"){
 				tool.soundtrackTouchMove(x, y, tool);
 			}
-			else if (this.mode == "VIDEO"){
+			else if (this.memeCreator.mode == "VIDEO"){
 				tool.videoTouchMove(x, y, tool);
 			}
 		}
 	};
 
-	this.mouseup = function (ev) {
+	this.mouseup = (ev) => {
 		ev.preventDefault(); 
-		tool.end();
+		tool.end(ev.pageX - this.canvasOffsetLeft,
+				ev.pageY - this.canvasOffsetTop)
 	}
 
-	this.end = function (){
+	this.end = function (x, y) {
 		if (tool.started) {
 			tool.started = false;
-			if (this.mode == "CHARACTER"){
+			if (this.memeCreator.mode == "CHARACTER"){
 				tool.drawnSegments++;
 
 				var char = this.character.current;
 				char.i = 0;
 				char.recordingStarted = 0;
-				this.recordPastPlay = false;
+				player.recordPastPlay = false;
 
-				setTimeout(function(){
-					if (this.paused){
+				setTimeout(() => {
+					if (player.paused){
 						player.playButton();
 					}
 				}, 20);
@@ -808,22 +765,28 @@ function MemeCanvasEventHandler(memeCreator) {
 
 				char.refreshLayer()
 			}
-			else if (this.mode === "DIALOG"){
-				tool.dialog.data[tool.dialog.data.length] = [-1, -1, Date.now() - tool.loopCounter];
-				this.recordPastPlay = false;
-				setTimeout(function(){
+			else if (this.memeCreator.mode === "DIALOG"){
+				this.memeCreator.preview.xyt.push([x, y, Date.now() - tool.loopCounter])
+				this.memeCreator.preview.xyt.push(["stop", "stop", Date.now() - tool.loopCounter])
+				this.memeCreator.preview.refreshLayer()
+
+				this.player.preview = this.memeCreator.newDialog()
+				this.memeCreator.preview = this.player.preview
+
+				player.recordPastPlay = false;
+				//setTimeout(function(){
 					if (this.paused && this.replayAfterRecord){
 						playButton();
 					}
-				}, 20);
+				//}, 20);
 			}
-			else if (this.mode === "DOODLE"){
-				tool.doodleTouchEnd(tool);
+			else if (this.memeCreator.mode === "DOODLE"){
+				tool.doodleTouchEnd(x, y);
 			}
-			else if (this.mode === "SOUNDTRACK"){
+			else if (this.memeCreator.mode === "SOUNDTRACK"){
 				tool.soundtrackTouchEnd(tool);
 			}
-			else if (this.mode === "VIDEO"){
+			else if (this.memeCreator.mode === "VIDEO"){
 				tool.videoTouchEnd(tool);
 			}
 		}
@@ -833,7 +796,7 @@ function MemeCanvasEventHandler(memeCreator) {
 MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
 	var time = this.position;
 	var strack = this.soundtrack;
-	this.recordPastPlay = true;
+	player.recordPastPlay = true;
 	if (this.paused){
 		resume();
 	}
@@ -925,7 +888,7 @@ MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (tool){
 		}
 		tool.channel.data[tool.channel.data.length] = [-1, -1, Date.now() - tool.loopCounter];
 	}
-	this.recordPastPlay = false;
+	player.recordPastPlay = false;
 	setTimeout(function(){
 		if (this.paused){
 			playButton();
@@ -936,37 +899,65 @@ MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (tool){
 	}, 20);
 };
 
+MemeCanvasEventHandler.prototype.dialogStartTouch = function (x, y) {
+	this.started = true
+	this.memeCreator.preview = this.player.preview
+	this.player.preview = undefined
+
+	this.memeCreator.preview.x = x;
+	this.memeCreator.preview.y = y;
+	
+	var time = this.player.position;
+	this.player.recordPastPlay = true;
+	if (this.player.paused){
+		this.player.resume();
+	}
+	this.loopCounter = Date.now() - time;
+	//var text = memeCreator.dialogInput.value;
+	
+	this.memeCreator.preview.xyt.push([x, y, time])
+	this.player.meme.layers.push(this.memeCreator.preview)
+	this.memeCreator.makeDialogLayerDiv(this.memeCreator.preview);
+}
+
 MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 
-	var tool = this
-	var time = this.player.position;
-	var doodles = this.player.doodles;
-	this.recordPastPlay = true;
-	if (this.player.paused){
-		this.memeCreator.player.resume();
+	var mc = this.memeCreator
+	
+	var time = mc.player.position;
+	
+	mc.player.recordPastPlay = true;
+	if (mc.player.paused){
+		mc.player.resume();
 	}
-	tool.loopCounter = Date.now() - time;
+	this.loopCounter = Date.now() - time;
 
-	tool.doodle = {color: doodles.currentColor, 
-			width: doodles.currentWidth,
-			data: [], i: 0};
-	doodles.list.push(tool.doodle);
+	this.doodle = {type: "DOODLE", 
+			color: mc.doodles.currentColor, 
+			width: mc.doodles.currentWidth,
+			xyt: [], 
+			i: 0}; // do we need i?
+	
+	this.doodle.xyt.push([x, y, time]);	
 
-	tool.doodle.data.push(x, y, time);	
+	this.t = Date.now();
 
-	tool.t = Date.now();
-
-	this.memeCreator.makeDoodleLayer(tool.doodle)
+	//todo check to see if we can append or overwrite instead of add
+	mc.meme.layers.push(this.doodle)
+	mc.makeDoodleLayer(this.doodle)
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
-	this.doodle.data.push([x, y, Date.now() - this.loopCounter]);
+	this.doodle.xyt.push([x, y, Date.now() - this.loopCounter]);
+	this.doodle.refreshLayer()
 };
-MemeCanvasEventHandler.prototype.doodleTouchEnd = function (tool){
+MemeCanvasEventHandler.prototype.doodleTouchEnd = function (x, y) {
+
+	this.doodle.xyt.push([x, y, Date.now() - this.loopCounter]);
 
 	this.doodle.refreshLayer()
-	this.recordPastPlay = false;
+	this.memeCreator.player.recordPastPlay = false;
 	setTimeout(() => {
-		if (this.player.paused){
+		if (this.memeCreator.paused){
 			
 			//playButton();
 		}
@@ -982,7 +973,7 @@ MemeCanvasEventHandler.prototype.videoStartTouch = function (x, y, tool){
 
 	var time = this.player.position;
 	var vid = this.player.video;
-	this.recordPastPlay = true;
+	player.recordPastPlay = true;
 	if (this.player.paused){
 		resume();
 	}
@@ -1032,7 +1023,7 @@ MemeCanvasEventHandler.prototype.videoTouchEnd = function (tool) {
 			vid.elements[vid.current].style.visibility = "hidden";
 		}
 	}
-	this.recordPastPlay = false;
+	player.recordPastPlay = false;
 	setTimeout(function(){
 		if (this.player.paused){
 			playButton();
@@ -1142,7 +1133,7 @@ MemeCreator.prototype.drawActions = function (actions, canvas) {
 	canvas.height = canvas.clientHeight
 
 	var middle = canvas.height / 2
-	var duration = this.this.player.length
+	var duration = this.player.meme.length
 
 	//document.createElement("canvas").getContext("2d").
 	
@@ -1153,11 +1144,10 @@ MemeCreator.prototype.drawActions = function (actions, canvas) {
 		for (var i = 0; i < actions.length; i++) {
 			if (i === 0) {
 				context.beginPath()
-				console.log(actions[i][2] / duration)
 				context.moveTo(actions[i][2] / duration * canvas.width, middle)
 			}
 			else {
-				if (actions[i][j] > -1) {
+				if (actions[i][j] !== "stop") {
 					d = actions[i][j] - last
 					context.lineTo(actions[i][2] / duration * canvas.width, middle - d)
 				}
@@ -1175,11 +1165,11 @@ MemeCreator.prototype.updatePlayhead = function (position) {
 		return
 	}
 	this.playhead.style.left = 
-		72 + this.lastDetail.clientWidth * Math.max(0, Math.min(1, position / this.this.player.length)) + "px"
+		72 + this.lastDetail.clientWidth * Math.max(0, Math.min(1, position / this.player.length)) + "px"
 }
 
 MemeCreator.prototype.makeDoodleLayer = function (doodle) {
-	var layer = this.addLayer({type: "DOODLE", doodle})
+	var layer = this.addLayer(doodle)
 	var headerCanvas = document.createElement("canvas")
 	headerCanvas.width = 40
 	headerCanvas.height = 40
@@ -1191,7 +1181,7 @@ MemeCreator.prototype.makeDoodleLayer = function (doodle) {
 	ctx.fillStyle = "black"
 	ctx.fillRect(0, 0, headerCanvas.width, headerCanvas.height)
 	
-	ctx.strokeStyle = this.colors[doodle.color]
+	ctx.strokeStyle = doodle.color
 	ctx.lineWidth = doodle.width
 	ctx.beginPath()
 	ctx.moveTo(0, headerCanvas.height / 2)
@@ -1203,7 +1193,7 @@ MemeCreator.prototype.makeDoodleLayer = function (doodle) {
 	layer.detail.appendChild(detailCanvas)
 
 	console.log(doodle)
-	doodle.refreshLayer = () => this.drawActions(doodle.data, detailCanvas)
+	doodle.refreshLayer = () => this.drawActions(doodle.xyt, detailCanvas)
 }
 
 MemeCreator.prototype.setupPanels = function () {
@@ -1237,5 +1227,11 @@ MemeCreator.prototype.setupPanels = function () {
 	var topBottomChange = y => {
 		console.log(y)
 		topPanels.style.height = isTouchingTopBottom - (isTouchingTopBottom - y) + "px"
+	}
+}
+
+MemeCreator.prototype.newDialog = function () {
+	return {type: "DIALOG", xyt: [], i: 0,
+		text: this.dialogInput.value || this.dialogInput.placeHolder
 	}
 }
