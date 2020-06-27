@@ -16,7 +16,7 @@ function OMGEmbeddedViewerMEME(viewer) {
 
     console.log("embeed ver")
     viewer.loadScriptsForType(
-            ["/apps/meme/js/omeme_player2.js"],
+            ["/apps/meme/js/omeme_player.js"],
             data.type, () => {
                 var mp = new OMemePlayer({div: this.div});
                 mp.load(data)
