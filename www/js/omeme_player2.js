@@ -18,7 +18,12 @@ function OMemePlayer(config) {
 	this.controlsCanvas = controlsCanvas;
 	
 	div.appendChild(sceneCanvas);
-	div.appendChild(controlsCanvas);
+	if (config.controlsDiv) {
+		config.controlsDiv.appendChild(controlsCanvas);
+	}
+	else {
+		div.appendChild(controlsCanvas);
+	}
 	
 	var width, height;
 	if (config.backgroundImg) {
@@ -41,8 +46,8 @@ function OMemePlayer(config) {
 	sceneCanvas.width = sceneCanvas.clientWidth;
 	sceneCanvas.height = height;
 	
-	//controlsCanvas.style.width = "100%" 
-	controlsCanvas.style.width = width + "px";
+	controlsCanvas.style.width = "100%" 
+	//controlsCanvas.style.width = width + "px";
 	controlsCanvas.width = controlsCanvas.clientWidth;
 	
 	//sceneCanvas.style.position = "relative";
@@ -119,12 +124,7 @@ OMemePlayer.prototype.load = function(mov) {
 
 	movie.scene.dialog.list = mov.dialog.list;
 	for (var ic = 0; ic < mov.characters.length; ic++){
-		if (mov.characters[ic].src){
-			this.addCharacterFromFile(mov.characters[ic]);
-		}
-		else {
-			addCharacter(mov.characters[ic]);
-		}
+		this.addCharacter(mov.characters[ic]);
 	}
 	if (!document.getElementById("scene-script")){
 		var ta = document.createElement("textarea");
@@ -212,21 +212,21 @@ OMemePlayer.prototype.getFreshScene = function() {
 OMemePlayer.prototype.setupControls = function () {
 	
 	var setOffsets = () => {
-		var offsets = omg.ui.totalOffsets(this.movie.scene.canvas);
-		this.movie.scene.canvasOffsetLeft = offsets.left;
+		var offsets = omg.ui.totalOffsets(this.controlsCanvas);
+		this.controlsOffsetLeft = offsets.left;
 		this.movie.scene.canvasOffseTop = offsets.top;
 	}
 
 	var controlsCanvas = this.controlsCanvas
 	controlsCanvas.addEventListener("mousedown", (ev) => {
 		setOffsets();
-		x = ev.pageX - this.movie.scene.canvasOffsetLeft;
-		y = ev.pageY - this.movie.scene.canvasOffsetTop;
+		x = ev.pageX - this.controlsOffsetLeft;
+		y = ev.pageY - this.controlsOffsetTop;
 		this.onControlsDown(x, y);
 	}, false);
 	controlsCanvas.addEventListener("mousemove", (ev) => {
-		x = ev.pageX - this.movie.scene.canvasOffsetLeft;
-		y = ev.pageY - this.movie.scene.canvasOffsetTop;
+		x = ev.pageX - this.controlsOffsetLeft;
+		y = ev.pageY - this.controlsOffsetTop;
 		this.onControlsMove(x, y);
 	}, false);
 	controlsCanvas.addEventListener("mouseup",  (ev) => {
@@ -236,14 +236,14 @@ OMemePlayer.prototype.setupControls = function () {
 	controlsCanvas.addEventListener("touchstart", (ev) => {
 		ev.preventDefault();
 		setOffsets();
-		x = ev.targetTouches[0].pageX - this.movie.scene.canvasOffsetLeft;
-		y = ev.targetTouches[0].pageY - this.movie.scene.canvasOffsetTop;
+		x = ev.targetTouches[0].pageX - this.controlsOffsetLeft;
+		y = ev.targetTouches[0].pageY - this.controlsOffsetTop;
 		this.onControlsDown(x, y);
 	}, false);
 	controlsCanvas.addEventListener("touchmove", (ev) => {
 		ev.preventDefault(); 
-		x = ev.targetTouches[0].pageX - this.movie.scene.canvasOffsetLeft;
-		y = ev.targetTouches[0].pageY - this.movie.scene.canvasOffsetTop;
+		x = ev.targetTouches[0].pageX - this.controlsOffsetLeft;
+		y = ev.targetTouches[0].pageY - this.controlsOffsetTop;
 		this.onControlsMove(x, y);
 	}, false);
 	controlsCanvas.addEventListener("touchend",  (ev) => {
@@ -268,6 +268,8 @@ OMemePlayer.prototype.onControlsDown = function(x, y){
 		this.movie.scene.started = Date.now() - newPosition;
 		this.movie.scene.position = newPosition;
 		this.movie.updateIs = true;
+		
+		if (this.onupdateposition) this.onupdateposition(newPosition)
 	}
 };
 
@@ -280,6 +282,8 @@ OMemePlayer.prototype.onControlsMove = function(x, y){
 		this.movie.scene.position = newPosition;
 		this.movie.updateIs = true;
 		this.movie.scene.soundtrack.fresh = true;
+
+		if (this.onupdateposition) this.onupdateposition(newPosition)
 	}
 };
 
@@ -302,6 +306,8 @@ OMemePlayer.prototype.onControlsEnd = function (){
 			this.movie.scene.position = newPosition;
 			this.movie.updateIs = true;
 			this.movie.scene.paused = this.wasPaused;
+
+			if (this.onupdateposition) this.onupdateposition(newPosition)
 		}
 	}
 	this.controlsStarted = 0;
@@ -390,6 +396,8 @@ OMemePlayer.prototype.animate = function() {
 	else {
 		nowInLoop = Date.now() - movie.scene.started;
 		movie.scene.position = nowInLoop;
+
+		if (this.onupdateposition) this.onupdateposition(nowInLoop)
 	}
 
 	if (movie.character.x > -1){
@@ -451,7 +459,7 @@ OMemePlayer.prototype.animate = function() {
 					}
 				}
 				if (movie.character.drawSelection && movie.character.current == ic
-					&& movie.scene.mode == "CHARACTERS"){
+					&& movie.scene.mode == "CHARACTER"){
 					this.drawSelection(char, 
 						pxdata[char.i][0], pxdata[char.i][1], movie.scene.context);
 				}
@@ -604,112 +612,62 @@ OMemePlayer.prototype.drawControls = function() {
 	}
 }
 
-function addCharacter(template){
-	turnOffCharacters();
-	var ic = movie.character.list.length;
-	if (template){
-		movie.character.list[ic] = template;
-		if (!template.actions){
-			template.actions = [];
-		}
-	}
-	else {
-		movie.character.list[ic] = movie.character.drawingCharacter;
-	}
-	movie.character.list[ic].i = 0;
-	movie.character.current = ic;
-	clearCharacterCanvas();
-	if (document.getElementById("draw-characters")){
-		document.getElementById("draw-characters").style.visibility = "hidden";		
-	}
-	var newCanvas = makeCharacterButton(ic);
-	if (newCanvas){
-		drawCharacter(movie.character.list[ic], 
-				newCanvas.width / 2, newCanvas.height, newCanvas.getContext("2d"));		
-	}
-
-	loadSprites(movie.character.current);
+OMemePlayer.prototype.addCharacter = function (char, callback, errorCallback) {
 	
-}
-OMemePlayer.prototype.addCharacterFromFile = function (template, callback, errorCallback){
+	char.i = 0
 	var movie = this.movie
-	var img = new Image();
-	var src;
-	if (template){
-		if (template.src){
-			src = template.src;			
-			if (!template.actions){
-				template.actions = [];
-			}
-			if (!template.spriteI){
-				template.spriteI = 0;
-			}
-			if (!template.spriteChanges)
-				template.spriteChanges = [];
-		}
-		else {
-			src = template;
-		}
-	}
-
-	turnOffCharacters();
-	clearSprites();
-	var charI = movie.character.list.length;
-	movie.character.current = charI;
-	movie.character.list[charI] = 
-		{sprites: [], currentSprite:0, spriteI:0, spriteChanges: [],
-			i:0, actions:[],
-			centerX: 0, 
-			centerY: 0,
-			"src":src};
+	movie.character.list.push(char)
 	
+	var img = new Image();
 
 	img.onerror = function(){
+		char.loading = false
 		if (errorCallback)
 			errorCallback();
 	};
 	img.onload = function(){
-		if (movie.scene.mode == "CHARACTERS"){
+		char.loading = false
+		if (movie.scene.mode == "CHARACTER"){
 			//TODO document.getElementById("sprites").style.display = "block";	
 		}		
 
-		movie.character.list[charI].sprites = [img];
-		movie.character.list[charI].centerX = img.width / 2; 
-		movie.character.list[charI].centerY = img.height / 2;
+		
+		char.sprites = [img];
+		char.centerX = img.width / 2; 
+		char.centerY = img.height / 2;
+		char.currentSprite = 0
 
-		loadSprite(charI, 0);
+		//loadSprite(charI, 0);
 		turnOnSprite(0);
 		
-		if (template && template.src){
-			movie.character.list[charI].spriteChanges = template.spriteChanges;
-			movie.character.list[charI].actions = template.actions;
-		}
-
-	
-		var srcSearch = src.search("_1");
-		if (srcSearch > 0){
-			var getNextSprite = function(nextSprite){
-				var src2  = src.substr(0, srcSearch) + "_" + nextSprite + ".png";
-				var img2 = new Image();
-				img2.src = src2;
-				img2.onload = function(){
-					movie.character.list[charI].sprites[nextSprite - 1] = img2;
-					loadSprite(charI, nextSprite - 1);
-
-					getNextSprite(nextSprite + 1);
-				};
-			};
-			getNextSprite(2);
-		}
-		
 		if (callback)
-			callback(movie.character.list[charI]);
+			callback(char);
 		
 	};
 
-	img.src = src;
+	char.loading = img
+	img.src = char.thing.url;
 	
-	return movie.character.list[charI];
+}
+
+OMemePlayer.prototype.addCharacterFromFile = function (thing, callback, errorCallback){
+	var movie = this.movie
+
+	turnOffCharacters();
+	clearSprites();
+
+	var char = {sprites: [], spriteI:0, spriteChanges: [],
+		i:0, actions:[],
+		centerX: 0, 
+		centerY: 0,
+		thing: thing
+	}
+	movie.character.current = char;
+	movie.character.list.push(char)
+	
+
+	this.addCharacter(char, callback, errorCallback)
+	return char;
 }
 
 OMemePlayer.prototype.setTheScene = function(){
@@ -775,7 +733,8 @@ OMemePlayer.prototype.drawCharacter = function (char, x, y, context){
 			}
 		}
 	}
-	else {
+	else if (char.paths) {
+		//todo 2020 damn, the old school character line drawer, turn this into a doodle app
 		context.lineWidth = 6;
 		context.shadowBlur = 10;
 		for (var i = 0; i < char.paths.length; i++){
@@ -825,7 +784,7 @@ OMemePlayer.prototype.drawLoading = function() {
 }
 
 OMemePlayer.prototype.currentCharacter = function () {
-	return this.movie.character.list[this.movie.character.current];
+	return this.movie.character.current;
 }
 
 
@@ -844,7 +803,7 @@ OMemePlayer.prototype.getJSON = function () {
 	for (var ic = 0; ic < movie.character.list.length; ic++){
 		mov.characters[ic] = {actions: movie.character.list[ic].actions,
 			spriteChanges: movie.character.list[ic].spriteChanges,
-			src: movie.character.list[ic].src,
+			thing: movie.character.list[ic].thing,
 			paths: movie.character.list[ic].paths};
 	}
 	mov.soundtrack = {sounds: [],
@@ -968,7 +927,6 @@ OMemePlayer.prototype.updateDoodles = function updateDoodles(nowInLoop) {
 	}	
 	
 }
-
 
 
 
@@ -1338,16 +1296,6 @@ function turnOnCharacter(ic, div){
 	//div.style.margin = "0px";
 }
 
-function recallCharacter(character){
-	for (var ic = 0; ic < movie.character.list.length; ic++){
-		if (movie.character.list[ic] == character) {
-			movie.character.current = ic;
-			loadSprites(ic);
-			return;
-		}  
-	}
-}
-
 function recallSound(n){
 	if (typeof(n) == "object") {
 		n = n.i;	}
@@ -1568,16 +1516,6 @@ function addVideoFile(template){
 	recallVideo(ii);
 }
 
-function editButton(){
-	movie.id = -1;
-	document.getElementById("toolbar").style.display = "block";
-	document.getElementById("area1").style.display = "block";
-	if (currentCharacter()){
-		document.getElementById("sprites").style.display = "block";
-	}
-	movie.scene.mode = "CHARACTERS";
-	document.getElementById("after-show").style.visibility = "hidden";
-}
 
 
 

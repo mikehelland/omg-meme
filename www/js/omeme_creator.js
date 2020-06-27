@@ -1,20 +1,26 @@
 //in June 2020 I revived this beast which was written well before ES6
 
 function MemeCreator(params) {	
+	this.url = "/apps/meme/" //todo make this smarter?
 	this.setupTabs();
-	
-	this.player = new OMemePlayer({div: params.playerDiv});
+
+	this.playSeekControls = document.getElementById("play-seek-controls")
+	this.player = new OMemePlayer({div: params.playerDiv, controlsDiv: this.playSeekControls});
 
 	this.loadParameters();
 
-	
+	this.layersDiv = document.getElementById("layer-list")
+	this.playhead = document.getElementById("playhead")
+	this.player.onupdateposition = (position) => this.updatePlayhead(position)
+
+	this.setupPanels()
 }
 
 MemeCreator.prototype.setupTabs = function () {
 	var mc = this;
 	var tabs = [
 	            {mode: "BACKGROUND"},
-			    {mode: "CHARACTERS"},
+			    {mode: "CHARACTER"},
 			    {mode: "DIALOG"},
 			    {mode: "SOUNDTRACK"},
 			    {mode: "DOODLE"},
@@ -48,7 +54,7 @@ MemeCreator.prototype.showTab = function (tab) {
 	if (tab.mode == "DOODLE") {
 		this.showDoodleTab(tab);
 	}
-	if (tab.mode == "CHARACTERS") {
+	if (tab.mode == "CHARACTER") {
 		this.showCharactersTab(tab);
 	}
 	if (tab.mode == "SOUNDTRACK") {
@@ -128,42 +134,15 @@ MemeCreator.prototype.showBackgroundTab = function (tab) {
 	if (tab.shown)
 		return;
 
-	var mc = this;
-	
-	var addButton = tab.pageDiv.getElementsByClassName("add-button")[0];
-	addButton.onclick = function () {
-		
-		var addBackgroundDialog = document.getElementById("add-background-page");
-		var params = {};
-		params.dialog = addBackgroundDialog;
-		mc.showAddBackgroundDialog(addBackgroundDialog);
-		mc.showDialog(params);
-	};
-
-	var searchButton = tab.pageDiv.getElementsByClassName("search-omg")[0];
-	searchButton.onclick = function () {
-
-		var dialog = document.getElementById("search-omg-dialog");
-		var params = {};
-		params.dialog = dialog;
-		var omgSearch = new OMGSearch(dialog, "IMAGE", function (result) {
-			mc.addBackdrop(result.picture);
-			
-			if (dialog.finishCallback) {
-				dialog.finishCallback();
-			}
-		});
-		
-		mc.showDialog(params);
-	};
-
-	
 	var userList = tab.pageDiv.getElementsByClassName("row-list")[0];
+
+	var searchBox = this.makeSearchBox(["IMAGE", "IMAGESET"])
+	userList.appendChild(searchBox)
 	
-	omg.server.getHTTP("/data/?type=IMAGE", function (results) {
+	omg.server.getHTTP("/data/?type=IMAGE", (results) => {
 		var details = results;
 		for (var idtl = 0; idtl < details.length; idtl++) {
-			var newRow = mc.loadBackgroundRow(details[idtl])
+			var newRow = this.loadBackgroundRow(details[idtl])
 			userList.appendChild(newRow);
 		}
 
@@ -188,21 +167,18 @@ MemeCreator.prototype.loadBackgroundRow = function (detail) {
 };
 
 MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
-	var mc = this;
 	
 	var newRow = document.createElement("img"); //omg.newDiv();
 	newRow.className = "background-thumbnail";
 	
 	newRow.src = detail.url //detail.thumbnail;
 	
-	var cp = this;
-	newRow.onclick = function () {
-		mc.addCharacterFromFile(detail.url);
+	newRow.onclick = () => {
+		this.addCharacterFromFile(detail);
 
 		if (finishCallback) {
 			finishCallback();
 		}
-
 	};	
 	
 	return newRow;
@@ -256,60 +232,7 @@ MemeCreator.prototype.showAddBackgroundDialog = function (pageDiv) {
 								}
 							}};
 	
-	omg.util.setupUploadButton(uploadBackground)
-
-	
-};
-
-
-MemeCreator.prototype.showAddCharacterDialog = function (pageDiv) {
-	if (pageDiv.shown)
-		return;
-	pageDiv.shown = true;
-	
-	var mc = this;
-	
-	var imgInput = pageDiv.getElementsByClassName("picture-url")[0];
-	var nextButton = pageDiv.getElementsByClassName("picture-url-next")[0];
-	nextButton.onclick = function () {
-		mc.addCharacterFromFile(imgInput.value);
-		
-		if (pageDiv.finishCallback) {
-			pageDiv.finishCallback();
-		}
-	};
-	
-	this.errorLoadingCharacterDiv = pageDiv.getElementsByClassName("error-loading")[0];
-
-	imgInput.onkeypress = function (key) {
-		if (key.key == "Enter") {
-			nextButton.onclick();
-		}
-		else {
-			mc.errorLoadingCharacterDiv.style.display = "none";
-		}
-	};
-
-	var uploadLog = pageDiv.getElementsByClassName("upload-log")[0];
-	var updateUploadLog = function (newLine) {
-		uploadLog.innerHTML = newLine;
-	};
-	
-	var uploadButton = pageDiv.getElementsByClassName("upload-next")[0]; 
-	var dataForm = pageDiv.getElementsByClassName("upload-form")[0];
-
-	var uploadParams = {button: uploadButton, 
-							form: dataForm, 
-							log: uploadLog, 
-							logCallback: updateUploadLog,
-							okCallback: function (response) {
-								mc.addCharacterFromFile("/upload?blob-key=" + response.blobKey);
-								if (pageDiv.finishCallback) {
-									pageDiv.finishCallback();
-								}
-							}};
-	
-	omg.util.setupUploadButton(uploadParams)
+	//omg.util.setupUploadButton(uploadBackground)
 
 	
 };
@@ -332,96 +255,64 @@ MemeCreator.prototype.addBackdrop = function (src) {
 MemeCreator.prototype.showCharactersTab = function (tab) {
 	if (tab.shown)
 		return;
-	
-	var mc = this;	
-	
-	var addButton = tab.pageDiv.getElementsByClassName("add-button")[0];
-	addButton.onclick = function () {
-		
-		var addDialog = document.getElementById("add-character-page");
-		var params = {};
-		params.dialog = addDialog;
-		mc.showAddCharacterDialog(addDialog);
-		mc.showDialog(params);
-	};
 
-	var searchButton = tab.pageDiv.getElementsByClassName("search-omg")[0];
-	searchButton.onclick = function () {
-		
-		var dialog = document.getElementById("search-omg-dialog");
-		var params = {};
-		params.dialog = dialog;
-		
-		var omgSearch = new OMGSearch(dialog, "SPRITE", function (result) {
-			mc.addCharacterFromFile(result.picture); //TODO result.data.url maybe?
-			
-			if (dialog.finishCallback) {
-				dialog.finishCallback();
-			}
-		});
-		
-		mc.showDialog(params);
-	};
-
-
-	this.characterList = document.getElementById("character-list");
-	this.emptyCharacterList = tab.pageDiv.getElementsByClassName("empty-character-list")[0];
-	this.characterList.errorLoadingDiv = tab.pageDiv.getElementsByClassName("error-loading")[0];
-
-	var character;
-	for (var ic = 0; ic < this.movie.character.list.length; ic++) {
-		character = this.movie.character.list[ic];
-		mc.makeCharacterButton(character);
-	}
-	
 	var userList = tab.pageDiv.getElementsByClassName("recent-character-list")[0];
 
-	omg.server.getHTTP("/data/?type=IMAGE", function (results) {
+	var searchBox = this.makeSearchBox(["SPRITE", "IMAGE", "IMAGESET", "TILESET"])
+	userList.appendChild(searchBox)
+	
+	omg.server.getHTTP("/data/?type=IMAGE", (results) => {
 		var details = results;
 		for (var idtl = 0; idtl < details.length; idtl++) {
-			var newRow = mc.loadCharacterRow(details[idtl], tab.pageDiv.finishCallback)
+			var newRow = this.loadCharacterRow(details[idtl], tab.pageDiv.finishCallback)
 			userList.appendChild(newRow);
 		}
 	});
 };
 
-MemeCreator.prototype.addCharacterFromFile = function (filename) {
-	var mc = this;
+MemeCreator.prototype.addCharacterFromFile = function (thing) {
 	
-	var errorCallback = function () {
-		mc.characterList.errorLoadingDiv.style.display = "inline-block";
+	var errorCallback = () => {
+		//this.characterList.errorLoadingDiv.style.display = "inline-block";
 	};
-	var loadCallback = function (character) {
-		mc.makeCharacterButton(character);			
+	var loadCallback = (character) => {
+		var layer = this.addLayer({type: "CHARACTER", thing, character})
+		this.makeCharacterButton(character, layer);			
 	};
 	
-	console.log(filename)
-	this.player.addCharacterFromFile(filename, loadCallback, errorCallback);
+	this.player.addCharacterFromFile(thing, loadCallback, errorCallback);
 };
 
-MemeCreator.prototype.makeCharacterButton = function (character){
+MemeCreator.prototype.makeCharacterButton = function (character, layer){
 	
-	var mc = this;
+	var newCanvas = document.createElement("canvas");	
+	newCanvas.height = 40;
+	newCanvas.width = 40;
 	
-	var newCanvas = document.createElement("canvas");
+	var draw = () => {
+		this.player.drawCharacter(character, 
+			newCanvas.width / 2, newCanvas.height - 20, newCanvas.getContext("2d"));
+	}
 
-	newCanvas.onclick = function () {
-		recallCharacter(character);
-		mc.selectListButton(mc.characterList.children, newCanvas, "character-button");
-		
-	};	
+	//this.selectListButton(this.characterList.children, newCanvas, "character-button");
+	if (character.loading) {
+		character.loading.addEventListener("load", () => draw())
+	}
+	else {
+		draw()
+	}
 	
-	newCanvas.height = 80;
-	newCanvas.width = 60;
-	
-	this.emptyCharacterList.style.display = "none";
-	
-	this.characterList.appendChild(newCanvas);
-	mc.selectListButton(mc.characterList.children, newCanvas, "character-button");
-	
-	this.player.drawCharacter(character, 
-		newCanvas.width / 2, newCanvas.height - 20, newCanvas.getContext("2d"));			
+	layer.header.appendChild(newCanvas)
 
+	layer.detailCanvas = document.createElement("canvas")
+	layer.detailCanvas.className = "meme-layer-detail-canvas"
+
+	layer.detail.appendChild(layer.detailCanvas)
+
+	character.refreshLayer = this.makeCharacterLayerRefresh(character, layer)
+	character.refreshLayer()
+
+	return newCanvas
 };
 
 MemeCreator.prototype.showSoundsTab = function (tab) {
@@ -639,10 +530,6 @@ MemeCreator.prototype.showDialogTab = function (tab) {
 		this.dialogInput = document.getElementById("dialog-text")
 		this.dialogList = tab.pageDiv.getElementsByClassName("dialog-list")[0];
 		
-		var dialogList = this.movie.scene.dialog.list;
-		for (var idlg = 0; idlg < dialogList.length; idlg++) {
-			this.addDialog(dialogList[idlg]);
-		}
 	}
 
 };
@@ -696,31 +583,46 @@ MemeCreator.prototype.showDialog = function (params) {
 
 MemeCreator.prototype.addDialog = function (dialog) {
 	
+	var layer = this.addLayer({type: "DIALOG", dialog})
+	var img = document.createElement("img")
+	img.style.verticalAlign = "middle"
+	img.src = this.url + "img/dialog.png"
+	layer.header.appendChild(img)
+
+	layer.detailCanvas = document.createElement("canvas")
+	layer.detailCanvas.className = "meme-layer-detail-canvas"
+	layer.detail.appendChild(layer.detailCanvas)
+
 	var newDialogInput = document.createElement("input");
 	newDialogInput.className = "dialog-edit-box";
 	newDialogInput.value = dialog.text;
-	this.dialogList.appendChild(newDialogInput);
+	layer.detail.appendChild(newDialogInput)
 	
 	newDialogInput.onkeyup = function () {
 		dialog.text = newDialogInput.value;
 	};
+
+	dialog.refreshLayer = () => this.drawActions(dialog.data, layer.detailCanvas)
+	dialog.refreshLayer()
 };
 
 MemeCreator.prototype.loadParameters = function () {
-	var params = document.location.search;
+	var paramString = document.location.search;
 	var nvp;
+	var params = {}
 
-	if (params.length > 1) {
-		params = params.slice(1).split("&");
-		for (var ip = 0; ip < params.length; ip++) {
-			nvp = params[ip].split("=");
+	if (paramString.length > 1) {
+		paramString = paramString.slice(1).split("&");
+		for (var ip = 0; ip < paramString.length; ip++) {
+			nvp = paramString[ip].split("=");
+			params[nvp[0]] = nvp[1] 
 			
-			if (nvp[0] == "id") {
-				this.loadId(nvp[1]);
-			}
 		}
 	}
 
+	if (params.id) {
+		this.loadId(params.id);
+	}
 };
 
 MemeCreator.prototype.loadId = function (id) {
@@ -730,8 +632,23 @@ MemeCreator.prototype.loadId = function (id) {
 
 		this.tabs[0].div.onclick()
 		this.setupCanvasEvents()
+		this.setupLayers()
 	});
 };
+
+MemeCreator.prototype.setupLayers = function () {
+	//todo refactor so there is a layer array with all types, instead of different types
+	var character;
+	for (var ic = 0; ic < this.movie.character.list.length; ic++) {
+		character = this.movie.character.list[ic];
+		var layer = this.addLayer({type: "CHARACTER", character})
+		this.makeCharacterButton(character, layer);
+	}
+	var dialogList = this.movie.scene.dialog.list;
+	for (var idlg = 0; idlg < dialogList.length; idlg++) {
+		this.addDialog(dialogList[idlg]);
+	}
+}
 
 function MemeCanvasEventHandler(memeCreator) {
 	this.memeCreator = memeCreator;
@@ -780,7 +697,7 @@ function MemeCanvasEventHandler(memeCreator) {
 	this.start = function(x, y){
 		tool.started = true;
 		var char = player.currentCharacter()
-		if (movie.scene.mode == "CHARACTERS"){
+		if (movie.scene.mode == "CHARACTER"){
 			if (!char){
 				tool.started = false;
 				return;
@@ -803,10 +720,10 @@ function MemeCanvasEventHandler(memeCreator) {
 				player.resume();
 			}
 			char.recordingStarted = time;
-			var actions = movie.character.list[movie.character.current].actions;
+			var actions = movie.character.current.actions;
 			if (!actions){
 				actions =[];
-				movie.character.list[movie.character.current].actions = actions;
+				character.current.actions = actions;
 			}
 
 			tool.loopCounter = Date.now() - time;
@@ -851,7 +768,7 @@ function MemeCanvasEventHandler(memeCreator) {
 		y = ev.pageY - movie.scene.canvasOffsetTop;
 		tool.move(x, y);
 		if (!tool.started) {
-			if (movie.scene.mode == "CHARACTERS" && player.currentCharacter()){
+			if (movie.scene.mode == "CHARACTER" && player.currentCharacter()){
 				if (!player.currentCharacter().actions || player.currentCharacter().actions.length == 0){
 					movie.character.x = x;
 					movie.character.y = y;
@@ -868,7 +785,7 @@ function MemeCanvasEventHandler(memeCreator) {
 		} 
 	}
 	this.mouseout = function (ev) {
-		if (movie.scene.mode == "CHARACTERS"){
+		if (movie.scene.mode == "CHARACTER"){
 			x = ev.pageX - movie.scene.canvasOffsetLeft;
 			y = ev.pageY - movie.scene.canvasOffsetTop;
 			tool.move(x, y);
@@ -883,9 +800,9 @@ function MemeCanvasEventHandler(memeCreator) {
 
 	this.move = function(x, y){
 		if (tool.started) {
-			if (movie.scene.mode == "CHARACTERS"){
+			if (movie.scene.mode == "CHARACTER"){
 				var char = player.currentCharacter()
-				var actions = movie.character.list[movie.character.current].actions;
+				var actions = movie.character.current.actions;
 				var time = Date.now() - tool.loopCounter;
 				var cuts = (char.i+1 < actions.length && 
 					actions[char.i+1][2] < time) ? 1 : 0;
@@ -915,10 +832,10 @@ function MemeCanvasEventHandler(memeCreator) {
 	this.end = function (){
 		if (tool.started) {
 			tool.started = false;
-			if (movie.scene.mode == "CHARACTERS"){
+			if (movie.scene.mode == "CHARACTER"){
 				tool.drawnSegments++;
 
-				var char = movie.character.list[movie.character.current];
+				var char = movie.character.current;
 				char.i = 0;
 				char.recordingStarted = 0;
 				movie.recordPastPlay = false;
@@ -930,8 +847,10 @@ function MemeCanvasEventHandler(memeCreator) {
 				}, 20);
 
 				tool.drawnPaths++;
+
+				char.refreshLayer()
 			}
-			else if (movie.scene.mode == "DIALOG"){
+			else if (movie.scene.mode === "DIALOG"){
 				tool.dialog.data[tool.dialog.data.length] = [-1, -1, Date.now() - tool.loopCounter];
 				movie.recordPastPlay = false;
 				setTimeout(function(){
@@ -940,13 +859,13 @@ function MemeCanvasEventHandler(memeCreator) {
 					}
 				}, 20);
 			}
-			else if (movie.scene.mode == "DOODLE"){
+			else if (movie.scene.mode === "DOODLE"){
 				tool.doodleTouchEnd(tool);
 			}
-			else if (movie.scene.mode == "SOUNDTRACK"){
+			else if (movie.scene.mode === "SOUNDTRACK"){
 				tool.soundtrackTouchEnd(tool);
 			}
-			else if (movie.scene.mode == "VIDEO"){
+			else if (movie.scene.mode === "VIDEO"){
 				tool.videoTouchEnd(tool);
 			}
 		}
@@ -1078,12 +997,15 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 	tool.doodle.data.push(x, y, time);	
 
 	tool.t = Date.now();
+
+	this.memeCreator.makeDoodleLayer(tool.doodle)
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
 	this.doodle.data.push([x, y, Date.now() - this.loopCounter]);
 };
 MemeCanvasEventHandler.prototype.doodleTouchEnd = function (tool){
 
+	this.doodle.refreshLayer()
 	var movie = this.memeCreator.movie
 	movie.recordPastPlay = false;
 	setTimeout(() => {
@@ -1176,4 +1098,187 @@ MemeCreator.prototype.setupCanvasEvents = function () {
 	canvas.addEventListener("touchmove", tool.touchmove, false);
 	canvas.addEventListener("touchend",   tool.touchend, false);
 	
+}
+
+MemeCreator.prototype.makeSearchBox = function (types) {
+	var html = `
+		<div class="feed-options">
+            <select class="search-user">
+                <option value="">All Users</option>
+                <!--todo <option value="following">Following</option>-->
+                <option value="me">Me</option>
+            </select>
+            <select class="search-type">
+				<option selected="" value="">All Types</option>
+			</select>
+            <select class="search-sort">
+                <option value="">Most Recent</option>
+                <option value="most-plays">Most Plays</option>
+                <!--<option value="most-remixes">Most Remixes</option>-->
+            </select>
+            <input class="search-terms" placeholder="Search">
+		</div>
+		<hr>`
+		
+	var searchBox = document.createElement("div")
+	searchBox.innerHTML = html
+	var searchUser = searchBox.getElementsByClassName("search-user")[0]
+	var searchType = searchBox.getElementsByClassName("search-type")[0]
+
+	types.forEach(type => {
+		var typeOption = document.createElement("option")
+		typeOption.innerHTML = type
+		searchType.appendChild(typeOption)
+	})
+
+	return searchBox
+}
+
+
+MemeCreator.prototype.addLayer = function (layer) {
+	
+	var div = document.createElement('div')
+	div.className = "meme-layer-controls"
+	
+	this.layersDiv.appendChild(div)
+
+	var header = document.createElement("div")
+	header.className = "meme-layer-header"
+
+	var detail = document.createElement("div")
+	detail.className = "meme-layer-detail"
+
+	div.appendChild(header)
+	div.appendChild(detail)
+
+	// I am the shore patrol!
+	this.lastDetail = detail
+
+	header.onclick = () => {
+		if (this.lastSelectedLayer) {
+			this.lastSelectedLayer.classList.remove("meme-layer-controls-selected")
+		}
+
+		if (layer.type === "CHARACTER") {
+			console.log(layer)
+			this.movie.character.current = layer.character;
+			
+		}
+		this.movie.scene.mode = layer.type
+
+		div.classList.add("meme-layer-controls-selected")
+		this.lastSelectedLayer = div
+	}
+
+	return {div, header, detail}
+}
+
+MemeCreator.prototype.makeCharacterLayerRefresh = function (character, layer) {
+	return () => {
+		this.drawActions(character.actions, layer.detailCanvas)
+	}	
+}
+
+MemeCreator.prototype.drawActions = function (actions, canvas) {
+	var context = canvas.getContext("2d")
+	canvas.width = canvas.clientWidth
+	canvas.height = canvas.clientHeight
+
+	var middle = canvas.height / 2
+	var duration = this.movie.scene.length
+
+	//document.createElement("canvas").getContext("2d").
+	
+	context.lineWidth = 2
+	var last, d
+	for (var j = 0; j < 2; j++) {
+		context.strokeStyle = j ? "red" : "blue"
+		for (var i = 0; i < actions.length; i++) {
+			if (i === 0) {
+				context.beginPath()
+				console.log(actions[i][2] / duration)
+				context.moveTo(actions[i][2] / duration * canvas.width, middle)
+			}
+			else {
+				if (actions[i][j] > -1) {
+					d = actions[i][j] - last
+					context.lineTo(actions[i][2] / duration * canvas.width, middle - d)
+				}
+			}
+			last = actions[i][j]
+		}
+		context.stroke()
+	}
+}
+
+MemeCreator.prototype.updatePlayhead = function (position) {
+	if (!this.lastDetail) {
+		// we use the detail of the last layer added
+		// there should be a way that works when there are no layers
+		return
+	}
+	this.playhead.style.left = 
+		72 + this.lastDetail.clientWidth * Math.max(0, Math.min(1, position / this.movie.scene.length)) + "px"
+}
+
+MemeCreator.prototype.makeDoodleLayer = function (doodle) {
+	var layer = this.addLayer({type: "DOODLE", doodle})
+	var headerCanvas = document.createElement("canvas")
+	headerCanvas.width = 40
+	headerCanvas.height = 40
+	headerCanvas.style.width = "40px"
+	headerCanvas.style.height = "40px"
+	layer.header.appendChild(headerCanvas)
+
+	var ctx = headerCanvas.getContext("2d")
+	ctx.fillStyle = "black"
+	ctx.fillRect(0, 0, headerCanvas.width, headerCanvas.height)
+	
+	ctx.strokeStyle = this.movie.colors[doodle.color]
+	ctx.lineWidth = doodle.width
+	ctx.beginPath()
+	ctx.moveTo(0, headerCanvas.height / 2)
+	ctx.lineTo(headerCanvas.width, headerCanvas.height / 2)
+	ctx.stroke()
+	
+	var detailCanvas = document.createElement("canvas")
+	detailCanvas.className = "meme-layer-detail-canvas"
+	layer.detail.appendChild(detailCanvas)
+
+	console.log(doodle)
+	doodle.refreshLayer = () => this.drawActions(doodle.data, detailCanvas)
+}
+
+MemeCreator.prototype.setupPanels = function () {
+	var topPanels = document.getElementById("top-panels")
+	var topBottomSeparator = document.getElementById("top-bottom-separator")
+
+	var isTouchingTopBottom = false
+	topBottomSeparator.onmousedown = e => {
+		e.preventDefault()
+		isTouchingTopBottom = e.clientY
+		
+		var fullscreenWindow = document.getElementById("fullscreen-window-background");
+		fullscreenWindow.style.display = "block";
+		fullscreenWindow.style.cursor = "ns-resize"
+
+		fullscreenWindow.onmousemove = e => {
+			e.preventDefault()
+			if (isTouchingTopBottom) {
+				topBottomChange(e.clientY)
+			}
+		}
+
+		fullscreenWindow.onmouseup = e => {
+			e.preventDefault()
+			isTouchingTopBottom = false
+			fullscreenWindow.style.display = "none";
+			fullscreenWindow.style.cursor = "default"
+		}
+	}
+
+	var topBottomChange = y => {
+		console.log(y)
+		topPanels.style.height = isTouchingTopBottom - (isTouchingTopBottom - y) + "px"
+	}
 }

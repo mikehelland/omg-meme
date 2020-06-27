@@ -1,430 +1,174 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <title>OMG Creator</title>    
-    <link rel="stylesheet" href="css/likeomg.css" type="text/css" />
-    <link rel="stylesheet" href="css/omeme_creator.css" type="text/css" />    
-  </head>
 
-  <body>
-  
-  
-  <div id="topbar">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<title>OMG Creator</title>
+	<link rel="stylesheet" href="css/likeomg.css" type="text/css" />
+	<link rel="stylesheet" href="css/omeme_creator.css" type="text/css" />
+</head>
+
+<body>
+
+
+	<!--<div id="topbar">
 
 	<a href="/">home</a> &gt; 
 	Create a Meme
 	
-	<div  id="no-web-audio">
-		<span class="old-browser">
-		<b>This browser doesn't support Web Audio API.</b></span> 
-		
-		(Try an updated Chrome, Safari, or FireFox for sound.)
-	</div> 
-
-	<div id="topbarright">
-		<!--<a id="login-link" href="">Login</a> <a href="" id="logout-link">Logout</a>--> 
-	</div>
-
-  </div>
-  
-      
-    <div class="main-tabs">
-	<div id="background-tab" class="selected-main-tab">Background</div>
-	<div id="characters-tab" class="main-tab">Characters</div>
-	<div id="dialog-tab" class="main-tab">Dialog</div>
-	<div id="doodle-tab" class="main-tab">Doodle</div>
-	<div id="soundtrack-tab" class="main-tab">Soundtrack</div>
-	<div id="submit-tab" class="main-tab">Submit</div>	
-	</div>
-
+  </div>-->
 	<div id="main-body">
+		<div id="top-panels">
 
-	    
-    <div id="detail-tab-frame">
+			<div id="detail-tab-frame">
 
-		<div class="detail-page" id="background-page">		
+				<div class="main-tabs">
+					<div id="background-tab" class="selected-main-tab">Background</div>
+					<div id="character-tab" class="main-tab">Characters</div>
+					<div id="dialog-tab" class="main-tab">Dialog</div>
+					<div id="doodle-tab" class="main-tab">Doodle</div>
+					<div id="soundtrack-tab" class="main-tab">Soundtrack</div>
+					<div id="submit-tab" class="main-tab">Submit</div>
+				</div>
 
-			<button class="add-button">New Background</button>
-			<button class="search-omg">Search OMG</button>
+				<div class="detail-page" id="background-page">
 
-			<hr/>
-			
-			<strong>Recent Backgrounds:</strong>
-			
-			<div class="row-list">
+					<div class="row-list">
+					</div>
+
+				</div>
+
+				<div class="detail-page" id="character-page">
+
+					<div class="recent-character-list">
+					</div>
+
+				</div>
+
+				<div class="detail-page" id="dialog-page">
+					<strong>Add a Dialog Bubble </strong>
+					<p>
+						<input id="dialog-text" placeholder="Put Text Here" type="text">
+					</p>
+					<p>
+						Enter some Text in the box above and then click on the
+						scene when and where it should appear.
+					</p>
+					<div class="dialog-list"></div>
+				</div>
+
+				<div class="detail-page" id="soundtrack-page">
+
+					<button class="add-button">Add Audio</button>
+					<button class="create-music-button">Create Music</button>
+					<!--<button class="add-button">Remix</button>-->
+					<button class="search-omg">Search OMG</button>
+
+					<hr />
+
+					<strong>Loaded Sounds:</strong>
+
+					<div class="row-list">
+					</div>
+
+					<p class="main-hint">
+						Single click the scene to play the entire file.
+						<br /><br />
+						Click and hold to play for a specific length.
+					</p>
+
+				</div>
+				<div class="detail-page" id="doodle-page">
+				</div>
+				<div class="detail-page" id="submit-page">
+
+					<input type="hidden" name="type" value="MEME"></input>
+					<input type="hidden" name="redirect" value="true"></input>
+					<input id="custom-json" type="hidden" name="data"></input>
+					<input id="submit-picture-input" type="hidden" name="picture"></input>
+
+					Title: <br />
+					<input type="text" name="title"></input> <br />
+
+					Tags: <br />
+					<input type="text" name="tags"></input> <br />
+					<br />
+
+					<p class="warning">Your Meme is not Posted Yet! Hit the Post Button below</p>
+					<button id="post-button" class="next-button" type="submit" value="Post!">Post</button>
+
+				</div>
 			</div>
-			
-		</div>		
 
-		<div class="detail-page" id="characters-page">
-
-			<button class="add-button">New Character</button>
-			<button class="search-omg">Search OMG</button>
-
-			<p class="main-hint">
-			<hr/>
-			Hint: "Paint" the character on the screen to animate them</p>
-			
-			<hr/>
-			
-			<strong>Loaded Characters:</strong>
-
-			<div id="character-list">
-				<span class="empty-character-list">No Characters yet...</span>
+			<div id="preview-window">
 			</div>
-			
-			<hr/>
-			
-			<strong>Recent Characters:</strong>
-			<div class="recent-character-list">
-			</div>
-			
-		</div>
-
-		<div class="detail-page" id="dialog-page">
-			<strong>Add a Dialog Bubble </strong>
-			<p>
-				<input id="dialog-text" placeholder="Put Text Here" type="text">
-			</p>
-			<p>
-				Enter some Text in the box above and then click on the 
-				scene when and where it should appear.
-			</p>
-			<div class="dialog-list"></div>
-		</div>
-		
-		<div class="detail-page" id="soundtrack-page">
-			
-			<button class="add-button">Add Audio</button>
-			<button class="create-music-button">Create Music</button>
-			<!--<button class="add-button">Remix</button>-->
-			<button class="search-omg">Search OMG</button>
-
-			<hr/>
-
-			<strong>Loaded Sounds:</strong>
-			
-			<div class="row-list">
-			</div>
-			
-			<p class="main-hint">
-				Single click the scene to play the entire file.
-				<br/><br/>
-				Click and hold to play for a specific length.
-			</p>
 
 		</div>
-		<div class="detail-page" id="doodle-page">
-		</div>
-		<div class="detail-page" id="submit-page">
 
-			<input type="hidden" name="type" value="MEME"></input>
-			<input type="hidden" name="redirect" value="true"></input>
-			<input id="custom-json" type="hidden" name="data"></input>
-			<input id="submit-picture-input" type="hidden" name="picture"></input>
+		<div id="top-bottom-separator"></div>
 
-			Title: <br/>
-			<input type="text" name="title"></input> <br/>
-			
-			Tags: <br/>
-			<input type="text" name="tags"></input> <br/>
-			<br/>
-			
-			<p class="warning">Your Meme is not Posted Yet! Hit the Post Button below</p>
-			<button id="post-button" class="next-button" type="submit" value="Post!">Post</button>
-			
+		<div id="play-seek-controls"></div>
+
+		<div id="layer-panel">
+			<div id="layer-list"></div>
+			<div id="playhead" class="beat-marker"></div>
 		</div>
-		
-		
+
 	</div>
-
-	<div id="preview-window">
-	</div>
-	
-	</div>
-
 	<div id="fullscreen-window-background">
 	</div>
 
-	<div class="dialog" id="add-sound-page">
-
-		<strong>Use a Sound URL on the web (*.mp3, *.ogg) </strong>
-
-		<p>	
-			<input placeholder="Sound URL" class="url" type="text" name="url"></input>
-			<br/>
-			<button class="url-next">Next</button>
-			<span class="error-loading">
-				Error loading image
-			</span>
-
-		</p>
-
-		<hr/>
-
-		<strong>- or - Upload a Sound </strong>
-		<p>	
-		    <form id="upload-form" enctype="multipart/form-data">
-            <input type="file" name="myFile" size=20>
-            <input type="hidden" name="type" value="image">
-            </form>
-            <button class="upload-next">Next</button>
-            <div class="upload-log">
-            </div>
-
-		</p>
-
-		<!--<strong>- or - Try an example </strong>-->
-
-		<div class="dialog-buttons">	
-			<button class="dialog-cancel">Cancel</button>
-		</div>
-	
-	</div>	
-	
-	<div class="dialog" id="add-background-page">		
-		<strong>Use an Image URL already on the web</strong>
-
-		<p>	
-			<input placeholder="Image URL" class="picture-url" type="text" name="picture-url"></input>
-			<br/>
-			<button class="picture-url-next">Next</button>
-
-			<span class="error-loading">
-				Error loading image
-			</span>
-
-		</p>
-		<hr/>
-		<strong>Upload an Image </strong>
-		<p>	
-		    <form id="background-upload-form" enctype="multipart/form-data">
-            <input type="file" name="myFile" size=20>
-            <input type="hidden" name="type" value="IMAGE">
-            </form>
-            <button class="background-upload-next">Next</button>
-            <div class="upload-log">
-            </div>
-		    
-		</p>
-		<hr/>
-		<div class="dialog-buttons">	
-			<button class="dialog-cancel">Cancel</button>
-		</div>
-
-	</div>		
 
 
-	<div class="dialog" id="add-character-page">		
-		<strong>Use an Image URL already on the web</strong>
+	<script src="/omg.js"></script>
 
-		<p>	
-			<input placeholder="Image URL" class="picture-url" type="text" name="picture-url"></input>
-			<br/>
-			<button class="picture-url-next">Next</button>
+	<script src="js/omeme_player2.js"></script>
+	<script src="js/omeme_creator.js"></script>
 
-			<span class="error-loading">
-				Error loading image
-			</span>
+	<script src="/js/omgservice.js"></script>
 
-		</p>
-		<hr/>
-		<strong>Upload an Image </strong>
-		<p>	
-		    <form class="upload-form" enctype="multipart/form-data">
-            <input type="file" name="myFile" size=20>
-            <input type="hidden" name="type" value="SPRITE">
-            </form>
-            <button class="upload-next">Next</button>
-            <div class="upload-log">
-            </div>
-		    
-		</p>
-		<hr/>
-		<div class="dialog-buttons">	
-			<button class="dialog-cancel">Cancel</button>
-		</div>
+	<script>
 
-	</div>		
-	
-	<div class="dialog" id="omgbam-dialog">
-	
-	
-	<div id="omgbam">
-	
-		<div id="master">
-			<div class="song"></div>
-		</div>
+		/*omg.server.getUser(function (user) {	
+			console.log(user);
+			if (!user.isLoggedIn) {
+				window.location = "/login.jsp?redirectUrl=" + window.location.href;
+			}
+		});*/
 
-		<div id="bam-controls">
-				
-		<div id="melody-maker" class="area">
-			<div class="remixer-caption" id="melody-maker-caption">Melody</div>	
-			<canvas id="melody-maker-canvas">
-			</canvas>
-		</div>
+
+
+		var urlNextButton = document.getElementById("picture-url-next");
+		var step1 = document.getElementById("step-1");
+		var step2 = document.getElementById("step-2");
+		var step3 = document.getElementById("step-3");
+		var imgInput = document.getElementById("picture-input");
+		var youtubeInput = document.getElementById("youtube-input");
+
+		var memePlayerDiv = document.getElementById("preview-window");
 		
-		<div id="beatmaker" class="area">
-			<div class="remixer-caption">Drumbeat</div>
-			<canvas id="beatmaker-canvas">
-			</canvas>
-		</div>
-		
-		<div id="mm-options" class="option-panel">		
-			<div class="panel-option" id="play-mm">Play</div>
-			<div class="panel-option" id="share-mm">Share</div>
-			<div class="panel-option" id="next-mm">Next</div>
-			<div class="panel-option" id="clear-mm">Clear</div>
-		</div>
-		
-		<div id="remixer" class="area">
-			<div class="remixer-caption" id="remixer-caption">Section</div>
-			<div class="remixer-message" id="no-section-message">
-				<p class="nodata">(This Section is empty. Add some things to it!)</p> 
-			</div>
-				
-			<div class="remixer-area" id="remixer-add-buttons">
-				<div class="remixer-add-button" id="remixer-add-melody">
-					Add <br/>Melody
-				</div>
-				<div class="remixer-add-button" id="remixer-add-bassline">
-					Add <br/>Bassline
-				</div>
-				<div class="remixer-add-button" id="remixer-add-drumbeat">
-					Add <br/>Drumbeat
-				</div>			
-			</div>
-		
-		</div>
-		
-		<div class="option-panel" id="remixer-option-panel">
-			<div class="panel-option" id="play-section">Play</div>
-			<div class="panel-option" id="share-section">Share</div>
-			<div class="panel-option" id="remixer-next">Next</div>				
-			<div class="panel-option" id="clear-remixer">Clear</div>
-		
-		</div>
-		
-		<div id="song-option-panel">
-			<div class="horizontal-panel-option" id="play-song">Play</div>	
-			<div class="horizontal-panel-option" id="share-song">Share</div>
-			<div class="horizontal-panel-option" id="next-song">Next</div>				
-			<div class="horizontal-panel-option" id="clear-song">Clear</div>
-		</div>
-		
-		<div id="song-edit-panel">
-			<div class="horizontal-panel-option" id="remove-section-button">Remove</div>
-		</div>
-		
-		<div id="rearranger">
-			<div class="remixer-caption">Song</div>
-			<input class="entity-name" value="unnamed"/>
-			<div class="remixer-area" id="rearranger-area">
-			</div>
-			<div class="section" id="add-section">+ Add Section</div>	
-		</div>
-		
-		</div> <!--omgbam-controls-->	
-	</div> <!--omgbam-->
-
-	<div class="omgbam-dialog-buttons">
-		<div class="horizontal-panel-option" id="omgbam-dialog-ok">OK</div>	
-		<div class="horizontal-panel-option" id="omgbam-dialog-cancel">Cancel</div>
-	</div>
-	</div> <!--omgbam-dialog-->
-	
-	<div class="dialog" id="search-omg-dialog">
-		<div class="detail-panel">
-			<div>
-				<div class="me-user-scope">
-					<img class="detail-user-scope-image" src="/img/user64x64.png"/>
-					<div class="detail-user-scope-caption">
-						Me
-					</div>
-				</div>
-				<div class="server-user-scope">
-					<img class="detail-user-scope-image" src="/img/following.png"/>
-					<div class="detail-user-scope-caption">
-						Server
-					</div>
-				</div>
-				<div class="global-user-scope">
-					<img class="detail-user-scope-image" src="/img/globe.png"/>
-						Global
-					<div class="detail-user-scope-caption"></div>
-				</div>
-			</div>
-		
-			<select class="type-select">
-				<option value="ALL">All</option>
-				<option value="MEME">Memes</option>
-				<option value="IMAGE">Backgrounds</option>
-				<option value="SPRITE">Characters</option>
-				<option value="AUDIO">Audio</option>
-				<option value="SOUNDSET">Soundsets</option>
-				<option value="SONG">Songs</option>
-				<option value="SECTION">Sections</option>
-				<option value="MELODY">Melodies</option>
-				<option value="DRUMBEAT">Drumbeats</option>
-				<option value="BASSLINE">Basslines</option>
-			</select>
-			
-			<div class="detail-list">
-			</div>
-		</div>
-		
-	</div>
-
-<script src="/omg.js"></script>
- 
-<script src="js/omeme_player2.js"></script>
-<script src="js/omeme_creator.js"></script>
-
-<script src="/js/omgservice.js"></script>
-
-<script>
-
-console.log("getusre")
-/*omg.server.getUser(function (user) {	
-	console.log(user);
-	if (!user.isLoggedIn) {
-		window.location = "/login.jsp?redirectUrl=" + window.location.href;
-	}
-});*/
+		setupLayout(memePlayerDiv);
 
 
+		var memeCreator = new MemeCreator({ playerDiv: memePlayerDiv });
 
-var urlNextButton = document.getElementById("picture-url-next");
-var step1 = document.getElementById("step-1");
-var step2 = document.getElementById("step-2");
-var step3 = document.getElementById("step-3");
-var imgInput = document.getElementById("picture-input");
-var youtubeInput = document.getElementById("youtube-input");
 
-var memePlayerDiv = document.getElementById("preview-window");
+		function setupLayout(previewWindow) {
+			var div = previewWindow;
+			if (window.innerWidth < window.innerHeight) {
+				div.style.top = "0px";
+				previewWindow.style.position = "static";
+				previewWindow.style.position = "relative";
+				var left = window.innerWidth / 2 - div.clientWidth / 2;
+				console.log(div.clientWidth);
+				div.style.left = left + "px";
 
-setupLayout(memePlayerDiv);	
-	
-	
-var memeCreator = new MemeCreator({playerDiv: memePlayerDiv});
-	
+				document.getElementById("detail-tab-frame").style.margin = "auto"
+			}
 
-function setupLayout(previewWindow) {
-	var div = previewWindow;
-	if (window.innerWidth < window.innerHeight) {
-		div.style.top = "0px";
-		previewWindow.style.position = "static";
-		previewWindow.style.position = "relative";
-		var left = window.innerWidth / 2 - div.clientWidth / 2 ;
-		console.log(div.clientWidth);
-		div.style.left = left + "px";  
+		}
+	</script>
 
-		document.getElementById("detail-tab-frame").style.margin = "auto"
-	} 
+</body>
 
-}
-</script>
-
-  </body>
 </html>
