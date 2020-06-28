@@ -11,7 +11,6 @@ function OMemePlayer(config) {
 	this.position = 0
 
 	var div = config.div;
-	this.characters = new Map()
 	
 	//todo 2020port this.player = new OMusicPlayer();
 	
@@ -35,10 +34,9 @@ function OMemePlayer(config) {
 	width = 480;
 	height = 320;
 	
-	//sceneCanvas.style.width = "100%" 
-	sceneCanvas.style.width = width + "px";
-	sceneCanvas.style.height = height + "px";
-	sceneCanvas.width = sceneCanvas.clientWidth;
+	sceneCanvas.style.width = "100%" 
+	sceneCanvas.style.height = "100%"
+	sceneCanvas.width = width;
 	sceneCanvas.height = height;
 	
 	controlsCanvas.style.width = "100%" 
@@ -68,14 +66,9 @@ function OMemePlayer(config) {
 	this.controlsContext = controlsCanvas.getContext("2d");		
 	this.context = sceneCanvas.getContext("2d");
 	
-	// the html5 movie maker app
-	//TODO probably a significant center of refactoring
-	// look for an id to download or get blank?
-	//movie = this.getFreshScene(config);
-
-	//todo port2020 movie.currentUser = userStuff();
+	//todo this.meme = this.getFreshScene(config);
 	
-	//	movie.scene.context.lineWidth = 6;
+	this.context.lineWidth = 6;
 	this.context.shadowColor = "black";
 	this.context.lineJoin = "round";
 
@@ -95,7 +88,7 @@ OMemePlayer.prototype.load = function(meme) {
 		layer.i = 0 
 		switch (layer.type) {
 			case "CHARACTER":
-				this.loadCharacter(layer.character);
+				this.loadCharacter(layer);
 				break;
 		}
 	})
@@ -110,6 +103,20 @@ OMemePlayer.prototype.load = function(meme) {
 	this.animate();	
 }
 
+OMemePlayer.prototype.newCharacter = function (thing, callback, errorCallback) {
+	
+	var char = {
+		type: "CHARACTER",
+		sprites: [], spriteI:0, spriteChanges: [],
+		i:0, actions:[],
+		centerX: 0, 
+		centerY: 0,
+		thing: thing
+	}
+
+	this.loadCharacter(char, callback, errorCallback)
+	return char;
+}
 
 OMemePlayer.prototype.setupControls = function () {
 	
@@ -224,10 +231,8 @@ OMemePlayer.prototype.onControlsEnd = function (x) {
 
 OMemePlayer.prototype.play = function() {
 	
-	var meme = this.meme
-
 	this.updateIs = true
-	this.started =  Date.now() //+ movie.preroll;
+	this.started =  Date.now() //+ preroll;
 	this.paused = false;
 	
 	this.hasPlayed = true;
@@ -254,11 +259,6 @@ OMemePlayer.prototype.animate = function() {
 		this.position = nowInLoop;
 
 		if (this.onupdateposition) this.onupdateposition(nowInLoop)
-	}
-
-	if (this.character && this.character.x > -1){
-		this.drawCharacterWithSelection(this.currentCharacter(), 
-			movie.character.x, movie.character.y, movie.scene.context);
 	}
 
 	if (this.loading){
@@ -293,7 +293,8 @@ OMemePlayer.prototype.animate = function() {
 			this.context.globalAlpha = 0.6
 			switch(this.preview.type) {
 				case "CHARACTER":
-					this.animateCharacter(this.meme.layers[this._animate_i], nowInLoop)
+					//with selection?
+					this.drawCharacterWithSelection(this.preview, this.preview.x, this.preview.y, this.context)
 					break;
 				case "DIALOG":
 					this.drawDialog(this.preview.text, this.preview.x, this.preview.y)
@@ -333,7 +334,7 @@ OMemePlayer.prototype.animate = function() {
 }
 
 
-OMemePlayer.prototype.animateCharacter = (char, nowInLoop) => {
+OMemePlayer.prototype.animateCharacter = function (char, nowInLoop) {
 	
 	if (char.actions.length > 0){
 		var pxdata = char.actions;
@@ -355,11 +356,6 @@ OMemePlayer.prototype.animateCharacter = (char, nowInLoop) => {
 			while (char.i+1 < pxdata.length && pxdata[char.i+1][2] < nowInLoop){
 				char.i++;
 			}
-		}
-		if (movie.character.drawSelection && movie.character.current == ic
-			&& this.mode == "CHARACTER"){
-			this.drawSelection(char, 
-				pxdata[char.i][0], pxdata[char.i][1], this.context);
 		}
 		this.drawCharacter(char, 
 			pxdata[char.i][0], pxdata[char.i][1], this.context);
@@ -405,6 +401,9 @@ OMemePlayer.prototype.drawDialog = function(text, x, y) {
 	if (x === "stop") {
 		return
 	}
+
+	x = this.canvas.width * x
+	y = this.canvas.height * y
 
 	//todo lots of variables being declared in a loop
 	var context = this.context;
@@ -474,7 +473,7 @@ OMemePlayer.prototype.drawControls = function() {
 	newPosition = newPosition * (this.position / this.meme.length);
 	newPosition += this.playButtonWidth;
 	newPosition = Math.min(newPosition, this.controlsCanvas.width - this.playButtonWidth);
-	if (newPosition > this.playButtonWidth){
+	if (newPosition >= this.playButtonWidth){
 		this.controlsContext.shadowBlur = 10;
 		this.controlsContext.fillStyle = "yellow";
 		this.controlsContext.fillRect(newPosition, 0, this.playButtonWidth, this.controlsCanvas.height);
@@ -482,13 +481,12 @@ OMemePlayer.prototype.drawControls = function() {
 	}
 }
 
-OMemePlayer.prototype.loadCharacter = function (data, callback, errorCallback) {
-
-	var char = {type: "CHARACTER", data}
+OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
 
 	char.img = new Image();
 	var img = char.img
-
+	char.sprites = [img];
+		
 	img.onerror = function(){
 		char.loading = false
 		if (errorCallback)
@@ -497,7 +495,6 @@ OMemePlayer.prototype.loadCharacter = function (data, callback, errorCallback) {
 	img.onload = function(){
 		char.loading = false
 		
-		char.sprites = [img];
 		char.centerX = img.width / 2; 
 		char.centerY = img.height / 2;
 		char.currentSprite = 0
@@ -510,39 +507,10 @@ OMemePlayer.prototype.loadCharacter = function (data, callback, errorCallback) {
 		
 	};
 
-	this.characters.push(char)
 	char.loading = img
-	img.src = char.data.thing.url;
+	img.src = char.thing.url;
 }
 
-
-OMemePlayer.prototype.addCharacter = function (char, callback, errorCallback) {
-	
-	char.i = 0
-	var movie = this.movie
-	this.characters.push(char)
-	
-	
-	
-}
-
-OMemePlayer.prototype.addCharacterFromFile = function (thing, callback, errorCallback){
-	var movie = this.movie
-
-	//wtf?
-	//turnOffCharacters();
-	//clearSprites();
-
-	var char = {sprites: [], spriteI:0, spriteChanges: [],
-		i:0, actions:[],
-		centerX: 0, 
-		centerY: 0,
-		thing: thing
-	}
-
-	this.addCharacter(char, callback, errorCallback)
-	return char;
-}
 
 OMemePlayer.prototype.drawBackground = function() {
 	
@@ -567,20 +535,13 @@ OMemePlayer.prototype.drawBackground = function() {
 OMemePlayer.prototype.drawCharacterWithSelection = function (char) {
 
 	if (char){
-		var movie = this.movie // superflous in a loop
-		this.drawCharacter(char, 
-			movie.character.x, movie.character.y, this.context);		
+		this.drawCharacter(char, char.x, char.y, this.context);		
 
-		if (char.sprites){
-			this.context.lineWidth = 1;
-			this.context.strokeStyle = "black";
-			this.context.strokeRect(movie.character.x - char.centerX, 
-					movie.character.y - char.centerY, 
+		this.context.lineWidth = 1;
+		this.context.strokeStyle = "black";
+		this.context.strokeRect(char.x - char.centerX, 
+				char.y - char.centerY, 
 				char.centerX * 2, char.centerY * 2);
-		}
-		else {
-
-		}
 	}
 }
 
@@ -604,7 +565,9 @@ OMemePlayer.prototype.drawCharacter = function (char, x, y, context){
 					img.width * char.zoom, img.height * char.zoom);			
 			}
 			else {
-				context.drawImage(img, x - img.width/2, y - img.height/2);										
+				context.drawImage(img, 
+					context.canvas.width * x - img.width/2, 
+					context.canvas.height * y - img.height/2);										
 			}
 		}
 	}
@@ -658,54 +621,6 @@ OMemePlayer.prototype.drawLoading = function() {
 	this.context.shadowBlur = 0;
 }
 
-OMemePlayer.prototype.currentCharacter = function () {
-	return this.movie.character.current;
-}
-
-
-// shouldn't really be in the player
-OMemePlayer.prototype.getJSON = function () {
-	var movie = this.movie
-	var mov = {
-			type: "MEME",
-			name: "", //document.getElementById("movie-title").value,
-			length: movie.scene.length, characters: [], 
-			//scene: document.getElementById("scene-script").value,
-			dialog: movie.scene.dialog};
-	if (movie.scene.backdrop){
-		mov.backdrop = movie.scene.backdrop.src; //movie.scene.backdropSource;
-	}
-	for (var ic = 0; ic < this.characters.length; ic++){
-		mov.characters[ic] = {actions: this.characters[ic].actions,
-			spriteChanges: this.characters[ic].spriteChanges,
-			thing: this.characters[ic].thing,
-			paths: this.characters[ic].paths};
-	}
-	mov.soundtrack = {sounds: [],
-		channels: movie.scene.soundtrack.channels};
-
-	var sounds = movie.scene.soundtrack.sounds;
-	var newSound;
-	var oldSound;
-	for (var isnd = 0; isnd < sounds.length; isnd++) {
-		oldSound = sounds[isnd];
-		newSound = {data: oldSound.data, type: oldSound.type, i: oldSound.i};
-		console.log(sounds[isnd]);
-		if (newSound.type == "omgsong") {
-			newSound.omgsong = sounds[isnd].omgsong.getData();
-		}
-		else {
-			newSound.src = sounds[isnd].src;
-		}
-		mov.soundtrack.sounds[isnd] = newSound;
-	}
-	
-	mov.video = {list: movie.scene.video.list};
-
-	mov.doodles = {list: movie.scene.doodles.list};
-	
-	return mov;
-}
 
 OMemePlayer.prototype.playButton = function() {
 	var scene = this
@@ -757,10 +672,12 @@ OMemePlayer.prototype.animateDoodle = function (doodle, nowInLoop) {
 		if (!drawn) {
 			drawn = true;
 			this.context.beginPath();
-			this.context.moveTo(doodle.xyt[j][0], doodle.xyt[j][1]);
+			this.context.moveTo(doodle.xyt[j][0] * this.canvas.width, 
+								doodle.xyt[j][1] * this.canvas.height);
 		}
 		else {
-			this.context.lineTo(doodle.xyt[j][0], doodle.xyt[j][1]);
+			this.context.lineTo(doodle.xyt[j][0] * this.canvas.width, 
+								doodle.xyt[j][1] * this.canvas.height);
 		}
 	}
 
@@ -1133,132 +1050,4 @@ function addVideoFile(template){
 
 
 
-
-function makeFreq(y){
-	return buildFrequency(movie.audio.ascale, movie.audio.octaves, 1 - y / movie.scene.canvas.height, movie.audio.base);	
-}
-function makePan(x){
-	return (x / movie.scene.canvas.width - 0.5) * 10;
-}
-//translated from Adam Smith's Android code
-function buildScale(quantizerString) {
-    if (quantizerString != null && quantizerString.length > 0) 
-    {
-        var parts = quantizerString.split(",");
-        var scale = []; //new float[parts.length];
-        for (var i = 0; i < parts.length; i++) {
-            scale[i] = parseFloat(parts[i]);
-        }
-        return scale;
-    } else {
-        return null;
-    }
-}
-function buildFrequency(scale, octaves, input, base) {
-	input = Math.min(Math.max(input, 0.0), 1.0);
-	var mapped = 0;
-	if (scale == null) {
-		mapped = base + input * octaves * 12.0;
-	} else {
-		var idx = Math.floor((scale.length * octaves + 1) * input);
-		mapped = base + scale[idx % scale.length] + 12 * Math.floor(idx / scale.length);
-	}
-	return Math.pow(2, (mapped - 69.0) / 12.0) * 440.0;
-}
-
-function makeChannel(color){
-	var info = getInstrumentInfo(color);
-	var chan = 	{};
-	var acontext = movie.audio.context;
-	chan.data = [];
-	chan.muted = false;
-	chan.defaultGain = 0.4;
-	chan.osc = acontext.createOscillator();
-	chan.gain = acontext.createGainNode();
-	chan.delay = acontext.createDelayNode();
-	chan.delayGain = acontext.createGainNode();
-	chan.panner = acontext.createPanner();
-	chan.gain.gain.value = chan.defaultGain; 
-	chan.delayGain.gain.value = 0.3;
-	chan.osc.connect(chan.gain);
-	chan.gain.connect(chan.panner);
-	chan.panner.connect(acontext.destination);
-
-	chan.osc.type = info.type;
-
-	if (info.delay){
-		chan.delay.delayTime.value = 0.5;
-		chan.gain.connect(chan.delay);
-		chan.delay.connect(chan.delayGain);
-		chan.delayGain.connect(acontext.destination);
-	}
-	chan.osc.noteOn(0);
-	chan.recording = true;
-	return chan;
-}
-function getInstrumentInfo(color){
-    var instrumentType = 0;
-    var ldelay = false;
-	var softEnvelope = false; // TODO slow attack and sustain if true
-    if (color == 0) {
-		ldelay = true;
-		softEnvelope = true;
-    } 
-    else if (color == 1) {
-    } 
-    else if (color == 2) {
-		softEnvelope = true;
-		instrumentType = 1;
-    } 
-    else if (color == 3) {
-		instrumentType = 1;
-    } 
-    else if (color == 4) {
-		softEnvelope = true;
-		instrumentType = 1;
-    } 
-    else if (color == 5) {
-		instrumentType = 1;
-    } 
-    else if (color == 6) {
-		softEnvelope = true;
-		instrumentType = 1;
-		ldelay = true;
-    } 
-    else if (color == 7) {
-		softEnvelope = true;
-		instrumentType = 2;
-    } 
-    else if (color == 8) {
-		instrumentType = 2;
-    } 
-    else if (color == 9) {
-		instrumentType = 2;
-		ldelay = true;
-		softEnvelope = true;    } 
-    else if (color == 10) {
-	instrumentType = 2;
-	ldelay = true;
-    } 
-	return {type: instrumentType, delay: ldelay, soft: softEnvelope};
-}
-
-function chooseInstrument(color){
-  var offs = 5;
-  movie.scene.soundtrack.currentSound = -1;
-  movie.scene.resetSoundtrack = true;
-  if (movie.scene.soundtrack.currentColor > -1){ 
-  var oldColor = document.getElementById("inst-" + movie.scene.soundtrack.currentColor);
-  oldColor.style.borderWidth = "1px";
-  oldColor.style.borderColor = "#808080";
-  oldColor.style.zIndex = 0;
-  }
-  var newColor = document.getElementById("inst-" + color);
-  newColor.style.borderWidth = "3px";
-  newColor.style.borderColor = "#FFFFFF";
-  newColor.style.zIndex = 1;
-  movie.scene.soundtrack.currentColor = color;
-
-
-}
 

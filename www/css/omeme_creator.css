@@ -4,7 +4,7 @@ html,body,#main-body {
 }
 body {
 	color:white;
-	background-color: black;
+	background-color: #181818;
 }
 
 #topbar {
@@ -50,10 +50,14 @@ body {
 	position:relative;
 	padding:2px;
 	border: 1px solid #444444;
+	width: 1px;
+	flex-grow: 1;
+	box-sizing: border-box;
+	height: 320px;
 }
 
 #detail-tab-frame {
-	width:600px;
+	width:500px;
 	margin:4px;
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 1em;
@@ -264,6 +268,7 @@ textarea {
 	border-top: 1px solid #222222;
 	overflow-y: scroll;
 	position: relative;
+	background-color: #282828;
 }
 
 .meme-layer-controls {
@@ -320,4 +325,5 @@ textarea {
 	padding-left: 32px;
 	padding-right: 33px;
 	box-sizing: border-box;
+	background-color: #282828;
 }
