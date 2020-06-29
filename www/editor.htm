@@ -48,7 +48,7 @@
 				<div class="detail-page" id="dialog-page">
 					<strong>Add a Dialog Bubble </strong>
 					<p>
-						<input id="dialog-text" placeholder="Put Text Here" type="text">
+						<input id="dialog-text" placeholder="enter text" type="text">
 					</p>
 					<p>
 						Enter some Text in the box above and then click on the
@@ -59,23 +59,8 @@
 
 				<div class="detail-page" id="soundtrack-page">
 
-					<button class="add-button">Add Audio</button>
-					<button class="create-music-button">Create Music</button>
-					<!--<button class="add-button">Remix</button>-->
-					<button class="search-omg">Search OMG</button>
-
-					<hr />
-
-					<strong>Loaded Sounds:</strong>
-
-					<div class="row-list">
+					<div class="search-box">
 					</div>
-
-					<p class="main-hint">
-						Single click the scene to play the entire file.
-						<br /><br />
-						Click and hold to play for a specific length.
-					</p>
 
 				</div>
 				<div class="detail-page" id="doodle-page">
@@ -87,15 +72,24 @@
 					<input id="custom-json" type="hidden" name="data"></input>
 					<input id="submit-picture-input" type="hidden" name="picture"></input>
 
-					Title: <br />
-					<input type="text" name="title"></input> <br />
+					<div class="main-tab-input-group">
+						Name: <br />
+						<input type="text" id="main-name-input" placeholder="(untitled)"></input> 
+					</div>
+					<div class="main-tab-input-group">
+						Tags: <br />
+						<input type="text" id="main-tags-input" placeholder="tag1, tag2, tag3...."></input> <br />
+					</div>
+					<br>
+					Size: 
+					<br>
+					<input type="text" id="width-input"></input> &times; 
+					<input type="text" id="height-input"></input> <br />
 
-					Tags: <br />
-					<input type="text" name="tags"></input> <br />
-					<br />
-
-					<p class="warning">Your Meme is not Posted Yet! Hit the Post Button below</p>
-					<button id="post-button" class="next-button" type="submit" value="Post!">Post</button>
+					<p>Add some things and then come here to save and share.</p>
+					<button id="post-button" class="next-button">Save</button>
+					<hr>
+					<a target="_blank" href="/">OMG Home</a>
 
 				</div>
 			</div>
@@ -118,15 +112,21 @@
 	<div id="fullscreen-window-background">
 	</div>
 
+	<script src="/js/omgservice.js"></script>
 
 
 	<!--<script src="/omg.js"></script>-->
+	<!--todo bundle openmusic?-->
+	<script src="/apps/music/js/omgclasses.js"></script>
+	<script src="/apps/music/js/omusic_player.js"></script>
+	<script src="/apps/music/js/omgservice_music.js"></script>
+	<script src="/apps/music/js/fx.js"></script>
+	<script src="/apps/music/js/libs/tuna-min.js"></script>
 
 	<script src="js/omeme_player.js"></script>
 	<script src="js/omeme_creator.js"></script>
 
-	<script src="/js/omgservice.js"></script>
-
+	
 	<script>
 
 		/*omg.server.getUser(function (user) {	

@@ -28,7 +28,7 @@ body {
 	border:1px solid black;
 	border-bottom:1px solid black;
 	padding:10px;
-	background: #222222;;
+	background: #080808;;
 	
 	/*margin-left:-2px;
 	margin-right:-2px;*/
@@ -36,9 +36,9 @@ body {
 	cursor:pointer;
 }
 .selected-main-tab {
-	border:1px solid #808080;
+	border:1px solid #222222;
 	border-bottom:0px;
-	background: #444444;;
+	background: #222222;;
 	cursor:default;
 }
 .main-tabs {
@@ -54,18 +54,21 @@ body {
 	flex-grow: 1;
 	box-sizing: border-box;
 	height: 320px;
+	background-color: black;
 }
 
 #detail-tab-frame {
-	width:500px;
+	width:508px;
 	margin:4px;
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 1em;
 }
 
 .detail-page {
+	background-color: #222222;
 	display:none;
 	padding:15px;
+	height: 100%;
 }
 
 .selected-doodle-color-box, .doodle-color-box {
@@ -219,8 +222,8 @@ textarea {
 
 .next-button, button {
 	margin:4px;
-	padding:12px;
-	background-color:#A0FFA0;
+	padding:4px;
+	background-color:#aaaaaa;
 	font-size:14pt;
 }
 
@@ -268,7 +271,7 @@ textarea {
 	border-top: 1px solid #222222;
 	overflow-y: scroll;
 	position: relative;
-	background-color: #282828;
+	background-color: #111111;
 }
 
 .meme-layer-controls {
@@ -325,5 +328,29 @@ textarea {
 	padding-left: 32px;
 	padding-right: 33px;
 	box-sizing: border-box;
-	background-color: #282828;
+	background-color: #111111;
+}
+
+#width-input, #height-input {
+	width: 59px;
+}
+
+.main-tab-input-group {
+	display: inline-block;
+}
+
+.layer-context-menu {
+	position:absolute;
+	padding:0px;
+	background-color: #585858;
+}
+
+.layer-context-menu > div {
+	padding:18px;
+	cursor: pointer;
+	border-bottom: 1px solid #383838;
+}
+
+.layer-context-menu > div:hover {
+	background-color: #686868;
 }

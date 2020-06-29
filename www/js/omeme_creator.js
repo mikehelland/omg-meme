@@ -21,17 +21,18 @@ function MemeCreator(params) {
 	this.loadParameters();
 
 	this.setupPanels()
+	this.setupHotKeys()
 }
 
 MemeCreator.prototype.setupTabs = function () {
 	var mc = this;
 	var tabs = [
+				{mode: "SUBMIT"},
 	            {mode: "BACKGROUND"},
 			    {mode: "CHARACTER"},
 			    {mode: "DIALOG"},
 			    {mode: "SOUNDTRACK"},
-			    {mode: "DOODLE"},
-			    {mode: "SUBMIT"}
+			    {mode: "DOODLE"}
 			    ];
 	
 	tabs.forEach((tab, i) => {
@@ -174,7 +175,7 @@ MemeCreator.prototype.loadBackgroundRow = function (detail) {
 
 MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 	
-	var newRow = document.createElement("img"); //omg.newDiv();
+	var newRow = document.createElement("img"); 
 	newRow.className = "background-thumbnail";
 	
 	newRow.src = detail.url //detail.thumbnail;
@@ -190,6 +191,22 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 	return newRow;
 };
 
+MemeCreator.prototype.loadSoundtrackResult = function (detail, finishCallback) {
+	var newRow = document.createElement("img"); 
+	newRow.className = "background-thumbnail";
+	
+	newRow.src = "img/melody.png" 
+	
+	newRow.onclick = () => {
+		this.addSoundThing(detail);
+
+		if (finishCallback) {
+			finishCallback();
+		}
+	};	
+	
+	return newRow;
+}
 
 MemeCreator.prototype.addBackground = function (src) {
 	
@@ -221,7 +238,8 @@ MemeCreator.prototype.showCharactersTab = function (tab) {
 MemeCreator.prototype.addCharacterFromFile = function (thing) {
 	
 	var errorCallback = () => {
-		//this.characterList.errorLoadingDiv.style.display = "inline-block";
+		console.error("did not make character from file")
+		//errorLoadingDiv.style.display = "inline-block";
 	};
 	var loadCallback = (character) => {
 		this.meme.layers.push(character)
@@ -246,7 +264,6 @@ MemeCreator.prototype.makeCharacterButton = function (character, layer){
 			0.5, 0.5, newCanvas.getContext("2d"));
 	}
 
-	//this.selectListButton(this.characterList.children, newCanvas, "character-button");
 	if (character.loading) {
 		character.loading.addEventListener("load", () => draw())
 	}
@@ -268,180 +285,58 @@ MemeCreator.prototype.makeCharacterButton = function (character, layer){
 };
 
 MemeCreator.prototype.showSoundsTab = function (tab) {
+	this.mode = "SOUNDTRACK"
+
 	if (tab.shown)
 		return;
 
-	var mc = this;
+	var gallery = tab.pageDiv.getElementsByClassName("search-box")[0];
 
-	this.soundList = tab.pageDiv.getElementsByClassName("row-list")[0];
+	var searchBox = this.makeSearchBox(["AUDIO", "SONG"])
+	gallery.appendChild(searchBox)
 	
+	omg.server.getHTTP("/data/?type=SONG", (results) => {
+		var details = results;
+		for (var idtl = 0; idtl < details.length; idtl++) {
+			var newRow = this.loadSoundtrackResult(details[idtl])
+			gallery.appendChild(newRow);
+		}
+
+	})
 };
 
-MemeCreator.prototype.showAddSoundDialog = function (pageDiv, tab) {
-	if (pageDiv.shown)
-		return;
-	pageDiv.shown = true;
-
-	var mc = this;
-
-	var imgInput = pageDiv.getElementsByClassName("url")[0];
-	var nextButton = pageDiv.getElementsByClassName("url-next")[0];
-	nextButton.onclick = function () {
-		var sound = addSoundFile(imgInput.value);
-		mc.makeSoundButton(sound);	
-		if (pageDiv.finishCallback) {
-			pageDiv.finishCallback();
-		}
-
-	};
-
-	imgInput.onkeypress = function (key) {
-		if (key.key == "Enter") {
-			nextButton.onclick();
-		}
-		else {
-			//mc.errorLoadingBackgroundDiv.style.display = "none";
-		}
-	};
-
-	var uploadLog = pageDiv.getElementsByClassName("upload-log")[0];
-	var updateUploadLog = function (newLine) {
-		uploadLog.innerHTML = newLine;
-	};
+MemeCreator.prototype.addSoundThing = function (thing) {
 	
-	var uploadButton = pageDiv.getElementsByClassName("upload-next")[0]; 
-	var dataForm = document.getElementById("upload-form");
-
-	var uploadParams = {button: uploadButton, 
-							form: dataForm, 
-							log: uploadLog, 
-							logCallback: updateUploadLog,
-							okCallback: function (response) {
-								var sound = addSoundFile("/upload?blob-key=" + response.blobKey);
-								mc.makeSoundButton(sound);	
-
-								if (pageDiv.finishCallback) {
-									pageDiv.finishCallback();
-								}
-							}};
-	
-	omg.util.setupUploadButton(uploadParams);
-
-	
-};
-
-MemeCreator.prototype.createDrumbeat = function () {
-	this.showOMGBam({command: "new", type : "DRUMBEAT"});
-	this.bam.beatmaker.setSize();
-};
-
-MemeCreator.prototype.createMelody = function () {
-	this.showOMGBam({command: "new", type : "MELODY"});
-	this.bam.mm.setSize();
-};
-
-MemeCreator.prototype.showOMGBam = function (params) {
-
-	var mc = this;
-
-	mc.bam = new OMusicEditor();
-	
-	var fullscreenWindow = document.getElementById("fullscreen-window-background");
-	fullscreenWindow.style.display = "block";
-
-	var omgbam = document.getElementById("omgbam");
-	var omgbamDialog = document.getElementById("omgbam-dialog");
-	
-	omgbamDialog.style.display = "block";
-	
-	var closeOMGBamDialog = function () {
-		fullscreenWindow.style.display = "none";
-		omgbamDialog.style.display = "none";
-		mc.bam.player.stop();
-		mc.bam.player.editting = false;
-		
-		mc.bam.clear();
-	};
-	
-	var okButton = document.getElementById("omgbam-dialog-ok")
-	okButton.onclick = function () {
-		var data;
-		var song;
-		var section;
-		if (mc.bam.song.sections.length > 0) {
-			song = mc.bam.song;
-		}
-		else if (mc.bam.section.parts.length > 0) {
-			song = new OMGSong();
-			song.sections.push(mc.bam.section);
-		}
-		else {
-			song = new OMGSong();
-			section = new OMGSection();
-			song.sections.push(section);
-			section.parts.push(mc.bam.part)
-		}
-		
-		song = addOpenMusicSong(song);
-		mc.makeSoundButton(song);
-		
-		closeOMGBamDialog();		
-	};
-
-	var cancelButton = document.getElementById("omgbam-dialog-cancel")
-	cancelButton.onclick = function () {
-		closeOMGBamDialog();		
-	};
-
-	mc.bam.setup(false);
-	mc.bam.player.editting = true;
-
-	mc.bam.load(params);
-	mc.bam.offsetTop = 60;
-};
-
-
-
-
-MemeCreator.prototype.selectListButton = function (list, button, className){
-	
-	for (var ib = 0; ib < list.length; ib++) {
-		if (list[ib] == button) {
-			list[ib].className = "selected-" + className;
-		}
-		else {
-			list[ib].className = className;
-		}
+	var layer = {
+		type: "SOUNDTRACK",
+		actions:[],
+		thing: thing
 	}
-};
+	this.player.loadSoundtrack(layer)
+	this.makeSoundLayerDiv(layer)
+	
+	this.meme.layers.push(layer)
+	this.preview = layer
+	this.player.preview = layer
+}
 
 
-MemeCreator.prototype.makeSoundButton = function (sound){
-	var mc = this;
-	var newItem = document.createElement("div");
-		
-	newItem.onclick = function () {
-		recallSound(sound);
-		mc.selectListButton(mc.soundList.children, newItem, "sound-button");
-	};
-	
-	this.soundList.appendChild(newItem);		
-	this.selectListButton(this.soundList.children, newItem, "sound-button");
-	
-};
 
 
 MemeCreator.prototype.showDialogTab = function (tab) {
 
 	if (!this.dialogInput) {
 		this.dialogInput = document.getElementById("dialog-text")
+		this.dialogInput.onkeyup = () => {
+			this.preview.text = this.dialogInput.value;
+		};
 	}
 
 	this.preview = this.newDialog()
-
+	this.player.preview = this.preview
 	//todo unselect current layer
 
-	this.player.preview = this.preview
+	this.preview.text = this.dialogInput.value || "enter text"
 
 };
 
@@ -511,10 +406,25 @@ MemeCreator.prototype.makeDialogLayerDiv = function (dialog) {
 	
 	newDialogInput.onkeyup = function () {
 		dialog.text = newDialogInput.value;
-	};
+	}
 
 	dialog.refreshLayer = () => this.drawActions(dialog.xyt, layer.detailCanvas)
 	dialog.refreshLayer()
+};
+
+MemeCreator.prototype.makeSoundLayerDiv = function (sound) {
+	
+	var layer = this.makeLayerDiv(sound)
+	var img = document.createElement("img")
+	img.src = this.url + "img/melody.png"
+	layer.header.appendChild(img)
+
+	layer.detailCanvas = document.createElement("canvas")
+	layer.detailCanvas.className = "meme-layer-detail-canvas"
+	layer.detail.appendChild(layer.detailCanvas)
+
+	sound.refreshLayer = () => this.drawSoundtrack(sound, layer.detailCanvas)
+	sound.refreshLayer()
 };
 
 MemeCreator.prototype.loadParameters = function () {
@@ -574,6 +484,9 @@ MemeCreator.prototype.setupLayers = function () {
 				break
 			case "DIALOG":
 				this.makeDialogLayerDiv(layer);
+				break
+			case "SOUNDTRACK":
+				this.makeSoundLayerDiv(layer);
 				break
 		}
 	})
@@ -803,101 +716,27 @@ MemeCanvasEventHandler.prototype.characterStartTouch = function (x, y) {
 }
 
 MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
-	var time = this.position;
-	var strack = this.soundtrack;
-	player.recordPastPlay = true;
-	if (this.paused){
-		resume();
+	this.started = true
+	this.startTime = Date.now()
+
+	var time = this.player.position;
+	this.player.recordPastPlay = true;
+	if (this.player.paused){
+		this.player.resume();
 	}
-	tool.loopCounter = Date.now() - time;
-	if (strack.currentSound > -1){
-		
-		strack.sounds[strack.currentSound].data.push([time, -1]);
-		if (strack.sounds[strack.currentSound].type == "omgsong") {
-			oMemePlayer.player.play(strack.sounds[strack.currentSound].omgsong);
-		}
-		else {
-			strack.soundAudios[strack.currentSound].currentTime = 0;
-			strack.soundAudios[strack.currentSound].play();			
-		}
-	}
-	else {
-		var wasFresh = this.soundtrack.fresh; 
-		if (this.soundtrack.fresh){
-			tool.channel = {instrument: this.soundtrack.currentColor, data: [], i: 0};
-			this.soundtrack.channels[this.soundtrack.channels.length] = tool.channel;
-			this.soundtrack.fresh = false;
-			if (this.audio){
-				var chan = makeChannel(this.soundtrack.currentColor);
-				this.audio.channels[this.audio.channels.length] = chan;
-				tool.audioChan = chan;
-			}
-		}
-		else {
-			if (this.audio){
-				tool.audioChan.gain.gain.value = tool.audioChan.defaultGain;
-				tool.audioChan.recording = true;
-			}
-		}
-		if (this.audio){
-			var freq = makeFreq(y) ;
-			var panX = makePan(x);
-			tool.audioChan.osc.frequency.value = freq;
-			tool.audioChan.panner.setPosition(panX, 0, 0);
-			tool.audioChan.data[tool.audioChan.data.length] = {"freq": freq, "pan":panX, "time":time};		
-		}
-		tool.channel.data[tool.channel.data.length] = [x, y, time];
-		if (wasFresh){
-			this.soundtrack.channels.sort(function(a,b){return a.data[0][2] - b.data[0][2]});
-			if (this.audio){
-				this.audio.channels.sort(function(a,b){return a.data[0].time - b.data[0].time});
-			}
-		}
-	}
-	tool.t = Date.now();
-};
-MemeCanvasEventHandler.prototype.soundtrackTouchMove = function (x, y, tool){
-	if (this.soundtrack.currentSound > -1){
-	}
-	else {
-		if (this.audio){
-			var freq = makeFreq(y) ;
-			var panX = makePan(x);
-			tool.audioChan.osc.frequency.setValueAtTime(freq, 0);
-			tool.audioChan.panner.setPosition(panX, 0, 0);
-			tool.audioChan.data[tool.audioChan.data.length] = {"freq": freq, "pan":panX};
-		}
-		tool.channel.data[tool.channel.data.length] = [x, y, Date.now() - tool.loopCounter];
-	}
-};
-MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (tool){
-	var strack = this.soundtrack;
-	if (strack.currentSound > -1){
-		var clickTime = Date.now() - tool.t;
-		var sdata = strack.sounds[strack.currentSound].data;
-		if (clickTime < 125){
-			var mediaLength = strack.soundAudios[strack.currentSound].duration * 1000;
-			this.length = Math.max(this.length, 
-					this.position + mediaLength);
-			sdata[sdata.length - 1][1] = sdata[sdata.length - 1][0] + mediaLength;
-		}
-		else {
-			sdata[sdata.length - 1][1] = Date.now() - tool.loopCounter;
-			if (strack.sounds[strack.currentSound].type == "omgsong")
-				oMemePlayer.player.stop();
-			else
-				strack.soundAudios[strack.currentSound].pause();
-		}
-	}
-	else {
-		if (this.audio){
-			tool.audioChan.gain.gain.value = 0;
-			tool.audioChan.data[tool.audioChan.data.length] = {"freq": -1, "pan": -1};
-			tool.audioChan.recording = false;
-		}
-		tool.channel.data[tool.channel.data.length] = [-1, -1, Date.now() - tool.loopCounter];
-	}
-	player.recordPastPlay = false;
+	this.loopCounter = Date.now() - time;
+	//var text = memeCreator.dialogInput.value;
+	
+	this.action = {action: "play", time}
+	this.memeCreator.preview.actions.push(this.action)
+}
+
+MemeCanvasEventHandler.prototype.soundtrackTouchMove = function (x, y, tool){}
+
+MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (){
+	this.action.length = Date.now() - this.startTime	
+	this.player.recordPastPlay = false;
+	this.memeCreator.preview.refreshLayer()
 	setTimeout(function(){
 		if (this.paused){
 			playButton();
@@ -906,7 +745,9 @@ MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (tool){
 			//TODO may have to add this to playList
 		}
 	}, 20);
-};
+
+	this.started = 0
+}
 
 MemeCanvasEventHandler.prototype.dialogStartTouch = function (x, y) {
 	this.started = true
@@ -1125,6 +966,10 @@ MemeCreator.prototype.makeLayerDiv = function (layer) {
 		this.lastSelectedLayer = div
 	}
 
+	header.oncontextmenu = e => {
+		this.showLayerContextMenu(e, layer, div)
+	}
+
 	return {div, header, detail}
 }
 
@@ -1144,6 +989,47 @@ MemeCreator.prototype.drawActions = function (actions, canvas) {
 
 	//document.createElement("canvas").getContext("2d").
 	
+	context.lineWidth = 2
+	var last, d
+	for (var j = 0; j < 2; j++) {
+		context.strokeStyle = j ? "red" : "blue"
+		for (var i = 0; i < actions.length; i++) {
+			if (i === 0) {
+				context.beginPath()
+				context.moveTo(actions[i][2] / duration * canvas.width, middle)
+			}
+			else {
+				if (actions[i][j] !== "stop") {
+					d = (actions[i][j] - last) * canvas.height * 5
+					context.lineTo(actions[i][2] / duration * canvas.width, middle - d)
+				}
+			}
+			last = actions[i][j]
+		}
+		context.stroke()
+	}
+}
+
+MemeCreator.prototype.drawSoundtrack = function (soundtrack, canvas) {
+	var actions = soundtrack.actions
+	var context = canvas.getContext("2d")
+	canvas.width = canvas.clientWidth
+	canvas.height = canvas.clientHeight
+
+	var middle = canvas.height / 2
+	var duration = this.player.meme.length
+
+	//document.createElement("canvas").getContext("2d").
+	
+	for (var i = 0; i < actions.length; i++) {
+		context.fillStyle = "#99FF99"
+		this.fillRoundedRect(actions[i].time / duration * canvas.width, 2,
+						actions[i].length / duration * canvas.width, canvas.height - 4,
+						4, context)
+		context.fillStyle = "black"
+		context.fillText(soundtrack.thing.name, actions[i].time / duration * canvas.width + 4, 14)
+	}
+
 	context.lineWidth = 2
 	var last, d
 	for (var j = 0; j < 2; j++) {
@@ -1220,6 +1106,8 @@ MemeCreator.prototype.setupPanels = function () {
 			if (originalY) {
 				this.playerDiv.style.height = originalHeight - (originalY - e.clientY) + "px"
 				topPanels.style.height = this.playerDiv.style.height
+
+				this.player.sizeCanvas()
 			}
 		}
 
@@ -1237,3 +1125,78 @@ MemeCreator.prototype.newDialog = function () {
 		text: this.dialogInput.value || this.dialogInput.placeHolder
 	}
 }
+
+
+
+
+
+MemeCreator.prototype.setupHotKeys = function () {
+
+	document.body.onkeypress = e => {
+		if (e.charCode === 32) { 
+			if (this.player.paused) {
+				if (this.player.position >= this.meme.length) {
+					this.player.play()
+				}
+				else {
+					this.player.resume()	
+				}
+			}
+			else {
+				this.player.pause()
+			}
+		}
+	}
+	
+}
+
+MemeCreator.prototype.fillRoundedRect = function (x, y, w, h, r, context) {
+	context.beginPath();
+	context.moveTo(x + r, y);
+	context.arcTo(x+w, y, x+w, y+h, r);
+	context.arcTo(x+w, y+h, x, y+h, r);
+	context.arcTo(x, y+h, x, y, r);
+	context.arcTo(x, y, x+w, y, r);
+	context.closePath();
+	context.fill();
+	context.stroke();
+
+}
+
+MemeCreator.prototype.showLayerContextMenu = function (e, layer, div) {
+	e.preventDefault()
+
+	var menu = document.createElement("div")
+	menu.className = "layer-context-menu"
+	menu.style.left = e.pageX + "px"
+	menu.style.bottom = window.innerHeight - e.pageY + "px"
+	
+	var moveUpButton = document.createElement("div")
+	moveUpButton.innerHTML = "Move Up"
+	menu.appendChild(moveUpButton)
+
+	var moveDownButton = document.createElement("div")
+	moveDownButton.innerHTML = "Move Down"
+	menu.appendChild(moveDownButton)
+	
+	var disableButton = document.createElement("div")
+	disableButton.innerHTML = "Disable"
+	menu.appendChild(disableButton)
+
+	var removeButton = document.createElement("div")
+	removeButton.innerHTML = "Delete"
+	menu.appendChild(removeButton)
+
+	var fullscreenWindow = document.getElementById("fullscreen-window-background");
+	fullscreenWindow.style.display = "block";
+	
+	fullscreenWindow.onclick = e => {
+		e.preventDefault()
+		fullscreenWindow.style.display = "none";
+		document.body.removeChild(menu)
+	}
+	fullscreenWindow.oncontextmenu = e => fullscreenWindow.onclick(e)
+
+	document.body.appendChild(menu)
+} 
+
