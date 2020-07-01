@@ -22,18 +22,21 @@ function MemeCreator(params) {
 
 	this.setupPanels()
 	this.setupHotKeys()
+
+	omg.server.getTypes()
+	omg.server.getUser()
 }
 
 MemeCreator.prototype.setupTabs = function () {
 	var mc = this;
 	var tabs = [
-				{mode: "SUBMIT"},
 	            {mode: "BACKGROUND"},
 			    {mode: "CHARACTER"},
 			    {mode: "DIALOG"},
 			    {mode: "SOUNDTRACK"},
-			    {mode: "DOODLE"}
-			    ];
+			    {mode: "DOODLE"},
+				{mode: "SUBMIT"},
+			];
 	
 	tabs.forEach((tab, i) => {
 		tab.div = document.getElementById(tab.mode.toLowerCase() + "-tab");
@@ -73,6 +76,16 @@ MemeCreator.prototype.showTab = function (tab) {
 	}
 	if (tab.mode == "SUBMIT") {
 		document.getElementById("post-button").onclick = () => {
+
+			if (this.meme.id) {
+				if (!omg.user) {
+					delete this.meme.id
+				}
+				else if (omg.user.id !== this.meme.user_id) {
+					delete this.meme.id
+				}
+			}
+
 			omg.server.post(this.meme, result => {
 				if (result && result.id) {
 					window.location = "/view/" + result.id
@@ -146,7 +159,7 @@ MemeCreator.prototype.showBackgroundTab = function (tab) {
 	var userList = tab.pageDiv.getElementsByClassName("row-list")[0];
 
 	var searchBox = this.makeSearchBox(["IMAGE", "IMAGESET"])
-	userList.appendChild(searchBox)
+	userList.appendChild(searchBox.div)
 	
 	omg.server.getHTTP("/data/?type=IMAGE", (results) => {
 		var details = results;
@@ -191,21 +204,8 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 	return newRow;
 };
 
-MemeCreator.prototype.loadSoundtrackResult = function (detail, finishCallback) {
-	var newRow = document.createElement("img"); 
-	newRow.className = "background-thumbnail";
-	
-	newRow.src = "img/melody.png" 
-	
-	newRow.onclick = () => {
-		this.addSoundThing(detail);
-
-		if (finishCallback) {
-			finishCallback();
-		}
-	};	
-	
-	return newRow;
+MemeCreator.prototype.loadSoundtrackResult = function (detail, resultList, finishCallback) {
+	omg.loadSearchResult(detail, {resultList, })
 }
 
 MemeCreator.prototype.addBackground = function (src) {
@@ -224,7 +224,7 @@ MemeCreator.prototype.showCharactersTab = function (tab) {
 	var userList = tab.pageDiv.getElementsByClassName("recent-character-list")[0];
 
 	var searchBox = this.makeSearchBox(["SPRITE", "IMAGE", "IMAGESET", "TILESET"])
-	userList.appendChild(searchBox)
+	userList.appendChild(searchBox.div)
 	
 	omg.server.getHTTP("/data/?type=IMAGE", (results) => {
 		var details = results;
@@ -292,17 +292,15 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 
 	var gallery = tab.pageDiv.getElementsByClassName("search-box")[0];
 
-	var searchBox = this.makeSearchBox(["AUDIO", "SONG"])
-	gallery.appendChild(searchBox)
+	var searchBox = this.makeSearchBox(["SONG","AUDIO"])
+	gallery.appendChild(searchBox.div)
 	
-	omg.server.getHTTP("/data/?type=SONG", (results) => {
-		var details = results;
-		for (var idtl = 0; idtl < details.length; idtl++) {
-			var newRow = this.loadSoundtrackResult(details[idtl])
-			gallery.appendChild(newRow);
-		}
-
+	searchBox.search(v => {
+		v.div.style.border = "2px solid red"
 	})
+			//var newRow = this.loadSoundtrackResult(details[idtl], gallery)
+			//gallery.appendChild(newRow);
+	
 };
 
 MemeCreator.prototype.addSoundThing = function (thing) {
@@ -484,6 +482,9 @@ MemeCreator.prototype.setupLayers = function () {
 				break
 			case "DIALOG":
 				this.makeDialogLayerDiv(layer);
+				break
+			case "DOODLE":
+				this.makeDoodleLayer(layer);
 				break
 			case "SOUNDTRACK":
 				this.makeSoundLayerDiv(layer);
@@ -916,18 +917,27 @@ MemeCreator.prototype.makeSearchBox = function (types) {
             </select>
             <input class="search-terms" placeholder="Search">
 		</div>
-		<hr>`
+		<hr>
+		<div class="search-box-results">
+		`
 		
-	var searchBox = document.createElement("div")
-	searchBox.innerHTML = html
-	var searchUser = searchBox.getElementsByClassName("search-user")[0]
-	var searchType = searchBox.getElementsByClassName("search-type")[0]
+	var searchBox = {}
+	searchBox.div = document.createElement("div")
+	searchBox.div.innerHTML = html
+	var searchUser = searchBox.div.getElementsByClassName("search-user")[0]
+	var searchType = searchBox.div.getElementsByClassName("search-type")[0]
+	var resultList = searchBox.div.getElementsByClassName("search-box-results")[0]
 
 	types.forEach(type => {
 		var typeOption = document.createElement("option")
 		typeOption.innerHTML = type
 		searchType.appendChild(typeOption)
 	})
+
+	searchBox.search = onclickcontent => {
+		omg.search({type: types[0], resultList, 
+			viewerParams: {maxHeight:60, viewMode: "MICRO", onclickcontent}}, true)
+	}
 
 	return searchBox
 }
@@ -1084,11 +1094,15 @@ MemeCreator.prototype.makeDoodleLayer = function (doodle) {
 	layer.detail.appendChild(detailCanvas)
 
 	doodle.refreshLayer = () => this.drawActions(doodle.xyt, detailCanvas)
+	doodle.refreshLayer()
 }
 
 MemeCreator.prototype.setupPanels = function () {
 	var topPanels = document.getElementById("top-panels")
 	var topBottomSeparator = document.getElementById("top-bottom-separator")
+
+	this.playerDiv.style.height = this.playerDiv.clientHeight + "px"
+	topPanels.style.height = this.playerDiv.style.height
 
 	var originalHeight
 	var originalY
@@ -1189,6 +1203,9 @@ MemeCreator.prototype.showLayerContextMenu = function (e, layer, div) {
 
 	var fullscreenWindow = document.getElementById("fullscreen-window-background");
 	fullscreenWindow.style.display = "block";
+	
+	fullscreenWindow.style.zIndex = 9
+	menu.style.zIndex = 10
 	
 	fullscreenWindow.onclick = e => {
 		e.preventDefault()

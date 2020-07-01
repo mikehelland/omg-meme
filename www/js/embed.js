@@ -14,9 +14,22 @@ function OMGEmbeddedViewerMEME(viewer) {
     this.div.appendChild(this.textDiv)
     parentDiv.appendChild(this.div)
 
+    let scripts = ["/apps/meme/js/omeme_player.js"]
+    
+    for (var i = 0; i < data.layers.length; i++) {
+        if (data.layers[i].type === "SOUNDTRACK") {
+            scripts.push("/apps/music/js/omgclasses.js")
+            scripts.push("/apps/music/js/omusic_player.js")
+            scripts.push("/apps/music/js/omgservice_music.js")
+            scripts.push("/apps/music/js/fx.js")
+            scripts.push("/apps/music/js/libs/tuna-min.js")
+            scripts.push("/apps/music/js/libs/viktor/viktor.js")
+            break
+        }
+    }
+
     console.log("embeed ver")
-    viewer.loadScriptsForType(
-            ["/apps/meme/js/omeme_player.js"],
+    viewer.loadScriptsForType(scripts,
             data.type, () => {
                 var mp = new OMemePlayer({div: this.div});
                 mp.load(data)

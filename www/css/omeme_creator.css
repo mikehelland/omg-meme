@@ -58,17 +58,18 @@ body {
 }
 
 #detail-tab-frame {
-	width:508px;
+	width:520px;
 	margin:4px;
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 1em;
+	overflow-y: auto;
 }
 
 .detail-page {
 	background-color: #222222;
 	display:none;
 	padding:15px;
-	height: 100%;
+	/*height: 100%;*/
 }
 
 .selected-doodle-color-box, .doodle-color-box {
@@ -224,7 +225,7 @@ textarea {
 	margin:4px;
 	padding:4px;
 	background-color:#aaaaaa;
-	font-size:14pt;
+/*	font-size:14pt;*/
 }
 
 .dialog-cancel {
@@ -353,4 +354,8 @@ textarea {
 
 .layer-context-menu > div:hover {
 	background-color: #686868;
+}
+
+.search-terms {
+	width: 140px;
 }
