@@ -282,9 +282,6 @@ textarea {
 	height:58px;
 }
 
-.meme-layer-controls-selected {
-	background-color: #aa1e1e;
-}
 .meme-layer-header {
 	border:1px solid #444444;
 	border-bottom-left-radius: 6px;
@@ -358,4 +355,8 @@ textarea {
 
 .search-terms {
 	width: 140px;
+}
+
+.highlighted {
+	background-color: #35aa1e;
 }

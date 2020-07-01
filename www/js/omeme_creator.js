@@ -204,10 +204,6 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 	return newRow;
 };
 
-MemeCreator.prototype.loadSoundtrackResult = function (detail, resultList, finishCallback) {
-	omg.loadSearchResult(detail, {resultList, })
-}
-
 MemeCreator.prototype.addBackground = function (src) {
 	
 	var errorCallback = function () {
@@ -296,30 +292,22 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 	gallery.appendChild(searchBox.div)
 	
 	searchBox.search(v => {
-		v.div.style.border = "2px solid red"
-	})
-			//var newRow = this.loadSoundtrackResult(details[idtl], gallery)
-			//gallery.appendChild(newRow);
+
+		var layer = {
+			type: "SOUNDTRACK",
+			actions:[],
+			thing: v.data
+		}
+
+		// todo if the viewer has a player... use that?
+		this.player.loadSoundtrack(layer)
 	
+		this.preview = layer
+		this.player.preview = layer	
+		
+		this.highlightDiv(v.embedDiv)
+	})	
 };
-
-MemeCreator.prototype.addSoundThing = function (thing) {
-	
-	var layer = {
-		type: "SOUNDTRACK",
-		actions:[],
-		thing: thing
-	}
-	this.player.loadSoundtrack(layer)
-	this.makeSoundLayerDiv(layer)
-	
-	this.meme.layers.push(layer)
-	this.preview = layer
-	this.player.preview = layer
-}
-
-
-
 
 MemeCreator.prototype.showDialogTab = function (tab) {
 
@@ -730,6 +718,11 @@ MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
 	
 	this.action = {action: "play", time}
 	this.memeCreator.preview.actions.push(this.action)
+	if (this.memeCreator.meme.layers.indexOf(this.memeCreator.preview) === -1) {
+		this.memeCreator.preview.i = 0
+		this.memeCreator.meme.layers.push(this.memeCreator.preview)
+		this.memeCreator.makeSoundLayerDiv(this.memeCreator.preview)
+	}
 }
 
 MemeCanvasEventHandler.prototype.soundtrackTouchMove = function (x, y, tool){}
@@ -960,10 +953,7 @@ MemeCreator.prototype.makeLayerDiv = function (layer) {
 	div.appendChild(detail)
 
 	header.onclick = () => {
-		if (this.lastSelectedLayer) {
-			this.lastSelectedLayer.classList.remove("meme-layer-controls-selected")
-		}
-
+		
 		if (layer.type === "CHARACTER") {
 			console.log(layer)
 			this.preview = layer
@@ -972,8 +962,7 @@ MemeCreator.prototype.makeLayerDiv = function (layer) {
 		}
 		this.mode = layer.type
 
-		div.classList.add("meme-layer-controls-selected")
-		this.lastSelectedLayer = div
+		this.highlightDiv(div)
 	}
 
 	header.oncontextmenu = e => {
@@ -1217,3 +1206,10 @@ MemeCreator.prototype.showLayerContextMenu = function (e, layer, div) {
 	document.body.appendChild(menu)
 } 
 
+MemeCreator.prototype.highlightDiv = function (div) {
+	if (this.lastSelectedDiv) {
+		this.lastSelectedDiv.classList.remove("highlighted")
+	}
+	div.classList.add("highlighted")
+	this.lastSelectedDiv = div
+}

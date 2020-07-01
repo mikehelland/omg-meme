@@ -782,5 +782,4 @@ OMemePlayer.prototype.sizeCanvas = function () {
 		this.canvas.style.paddingTop = "0px"
 		this.canvas.style.paddingBottom = "0px"
 	}
-	console.log(memeRatio, canvasRatio)
 }
