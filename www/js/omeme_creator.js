@@ -75,23 +75,7 @@ MemeCreator.prototype.showTab = function (tab) {
 		this.showDialogTab(tab);
 	}
 	if (tab.mode == "SUBMIT") {
-		document.getElementById("post-button").onclick = () => {
-
-			if (this.meme.id) {
-				if (!omg.user) {
-					delete this.meme.id
-				}
-				else if (omg.user.id !== this.meme.user_id) {
-					delete this.meme.id
-				}
-			}
-
-			omg.server.post(this.meme, result => {
-				if (result && result.id) {
-					window.location = "/view/" + result.id
-				}
-			});
-		}
+		this.showSaveTab(tab)
 	}
 	tab.shown = true;
 };
@@ -100,56 +84,10 @@ MemeCreator.prototype.showDoodleTab = function (tab) {
 	if (tab.shown)
 		return;
 
-	this.doodles = {}
-	this.doodles.currentWidth = 6;
-	
-	for (var ic = 0; ic < this.colors.length; ic++) {
-		tab.pageDiv.appendChild(this.makeDoodleColorBox(ic));
-	}
-	
-	var pp = document.createElement("span");
-	pp.innerHTML = "<br/>Line Width:";
-	tab.pageDiv.appendChild(pp);
-	
-	var select, option;
-	select = document.createElement("select");
-	for (ic = 1; ic < 21; ic++) {
-		option = document.createElement("option");
-		option.value = ic;
-		option.innerHTML = ic;
-		
-		if (ic == this.doodles.currentWidth) {
-			option.selected = true;
-		}
-		select.add(option);
-	}
-	select.onchange = () => {
-		this.doodles.currentWidth = parseInt(select.value); 
-	};
-	tab.pageDiv.appendChild(select);
+	this.doodles = {currentWidth: 6, currentColor: "#ff0000"}
 
-};
-
-MemeCreator.prototype.makeDoodleColorBox = function (i) {
-	var colorBox = document.createElement("div");
-	colorBox.className = "doodle-color-box";
-	colorBox.style.backgroundColor = this.colors[i];
-	colorBox.onclick = () => {
-		var offs = 5;
-		if (this.doodles.currentColorBox){ 
-			var oldColor = this.doodles.currentColorBox;
-			oldColor.className = "doodle-color-box";
-			oldColor.style.zIndex = 0;
-		}
-		var newColor = colorBox;
-
-		newColor.className = "selected-doodle-color-box";
-		newColor.style.zIndex = 1;
-		this.doodles.currentColor = this.colors[i];
-		this.doodles.currentColorBox = newColor;
-	};
-	return colorBox;	
-
+	document.getElementById("doodle-color").onchange = e => this.doodles.currentColor = e.target.value
+	document.getElementById("doodle-width").onchange = e => this.doodles.currentWidth = e.target.value
 };
 
 MemeCreator.prototype.showBackgroundTab = function (tab) {
@@ -244,6 +182,8 @@ MemeCreator.prototype.addCharacterFromFile = function (thing) {
 		
 		this.preview = character
 		this.player.preview = character
+
+		this.highlightDiv(layerDiv.div)
 	};
 	
 	this.player.newCharacter(thing, loadCallback, errorCallback);
@@ -293,15 +233,8 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 	
 	searchBox.search(v => {
 
-		var layer = {
-			type: "SOUNDTRACK",
-			actions:[],
-			thing: v.data
-		}
-
-		// todo if the viewer has a player... use that?
-		this.player.loadSoundtrack(layer)
-	
+		var layer = this.addSoundtrack(v.data)
+		
 		this.preview = layer
 		this.player.preview = layer	
 		
@@ -325,6 +258,30 @@ MemeCreator.prototype.showDialogTab = function (tab) {
 	this.preview.text = this.dialogInput.value || "enter text"
 
 };
+
+MemeCreator.prototype.showSaveTab = function (tab) {
+	document.getElementById("post-button").onclick = () => {
+
+		if (this.meme.id) {
+			if (!omg.user) {
+				delete this.meme.id
+			}
+			else if (omg.user.id !== this.meme.user_id) {
+				delete this.meme.id
+			}
+		}
+
+		this.meme.name = document.getElementById("main-name-input").value || ""
+		this.meme.tags = document.getElementById("main-tags-input").value || ""
+	
+		omg.server.post(this.meme, result => {
+			if (result && result.id) {
+				window.location = "/view/" + result.id
+			}
+		});
+	}
+	
+}
 
 MemeCreator.prototype.showDialog = function (params) {
 
@@ -430,6 +387,9 @@ MemeCreator.prototype.loadParameters = function () {
 	if (params.id) {
 		this.loadId(params.id);
 	}
+	if (params.use) {
+		this.useThing(params.use)
+	}
 	else {
 		this.player.load({
 			type: "MEME",
@@ -444,7 +404,12 @@ MemeCreator.prototype.loadParameters = function () {
 MemeCreator.prototype.loadId = function (id) {
 	omg.server.getId(id, (response) => {
 		this.player.load(response);
+		
 		this.onLoad()
+
+		document.getElementById("main-name-input").value = this.meme.name || ""
+		document.getElementById("main-tags-input").value = this.meme.tags || ""
+	
 	});
 };
 
@@ -1023,7 +988,8 @@ MemeCreator.prototype.drawSoundtrack = function (soundtrack, canvas) {
 	for (var i = 0; i < actions.length; i++) {
 		context.fillStyle = "#99FF99"
 		this.fillRoundedRect(actions[i].time / duration * canvas.width, 2,
-						actions[i].length / duration * canvas.width, canvas.height - 4,
+						(actions[i].length === -1 ? 1 : (actions[i].length / duration)) * canvas.width, 
+						canvas.height - 4,
 						4, context)
 		context.fillStyle = "black"
 		context.fillText(soundtrack.thing.name, actions[i].time / duration * canvas.width + 4, 14)
@@ -1212,4 +1178,41 @@ MemeCreator.prototype.highlightDiv = function (div) {
 	}
 	div.classList.add("highlighted")
 	this.lastSelectedDiv = div
+}
+
+MemeCreator.prototype.useThing = function (thingId) {
+
+	this.player.load({
+		type: "MEME",
+		width: 480,
+		height: 320,
+		layers: []
+	})
+	
+	omg.server.getId(thingId, thing => {
+		if (thing.type === "IMAGE") {
+			this.addBackground(thing)
+		}
+		else if (thing.type === "SONG") {
+			this.player.meme.length = 5000
+			var layer = this.addSoundtrack(thing)
+			this.player.meme.layers.push(layer)
+			layer.actions.push({action: "play", time: 0, length: 5000})
+		}
+
+		this.onLoad()
+	})
+}
+
+MemeCreator.prototype.addSoundtrack = function (thing) {
+	var layer = {
+		type: "SOUNDTRACK",
+		actions:[],
+		thing: thing
+	}
+	console.log("make soundtrack?")
+				
+	// todo if the viewer has a player... use that?
+	this.player.loadSoundtrack(layer)
+	return layer
 }
