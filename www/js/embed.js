@@ -29,12 +29,10 @@ function OMGEmbeddedViewerMEME(viewer) {
     }
 
     console.log("embeed ver")
-    viewer.loadScriptsForType(scripts,
-            data.type, () => {
-                var mp = new OMemePlayer({div: this.div});
-                mp.load(data)
-            }
-    )
+    omg.util.loadScripts(scripts, () => {
+        var mp = new OMemePlayer({div: this.div});
+        mp.load(data)
+    })
 
 }
 
