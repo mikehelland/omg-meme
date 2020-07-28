@@ -28,7 +28,6 @@ function OMGEmbeddedViewerMEME(viewer) {
         }
     }
 
-    console.log("embeed ver")
     omg.util.loadScripts(scripts, () => {
         var mp = new OMemePlayer({div: this.div});
         mp.load(data)

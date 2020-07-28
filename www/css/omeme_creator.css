@@ -54,7 +54,7 @@ body {
 	flex-grow: 1;
 	box-sizing: border-box;
 	height: 320px;
-	background-color: black;
+	background-color: #101010;
 }
 
 #detail-tab-frame {

@@ -494,8 +494,9 @@ function MemeCanvasEventHandler(memeCreator) {
 		);
 	}
 	this.start = (x, y) => {
-		x = x / player.canvas.clientWidth
-		y = y / player.canvas.clientHeight
+		x = (x - player.horizontalPadding / 2) / (player.canvas.clientWidth - player.horizontalPadding)
+		y = (y - player.verticalPadding / 2) / (player.canvas.clientHeight - player.verticalPadding)
+		
 		tool.started = true;
 		if (this.memeCreator.mode === "CHARACTER"){
 			this.characterStartTouch(x, y)
@@ -537,8 +538,8 @@ function MemeCanvasEventHandler(memeCreator) {
 	};
 
 	this.move = (x, y) => {
-		x = x / player.canvas.clientWidth
-		y = y / player.canvas.clientHeight
+		x = (x - player.horizontalPadding / 2) / (player.canvas.clientWidth - player.horizontalPadding)
+		y = (y - player.verticalPadding / 2) / (player.canvas.clientHeight - player.verticalPadding)
 		
 		if (this.memeCreator.preview) {
 			this.memeCreator.preview.x = x;
@@ -569,6 +570,8 @@ function MemeCanvasEventHandler(memeCreator) {
 			else if (this.memeCreator.mode == "VIDEO"){
 				tool.videoTouchMove(x, y, tool);
 			}
+
+			this.memeCreator.refreshLayers()
 		}
 	};
 
@@ -757,7 +760,6 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
 	this.doodle.xyt.push([x, y, Date.now() - this.loopCounter]);
-	this.doodle.refreshLayer()
 };
 MemeCanvasEventHandler.prototype.doodleTouchEnd = function (x, y) {
 
@@ -1215,4 +1217,14 @@ MemeCreator.prototype.addSoundtrack = function (thing) {
 	// todo if the viewer has a player... use that?
 	this.player.loadSoundtrack(layer)
 	return layer
+}
+
+MemeCreator.prototype.refreshLayers = function (layer) {
+
+	if (layer && this.meme.duration === this.lastDuration) {
+		layer.refreshLayer()
+		return
+	}
+	
+	this.meme.layers.forEach(layer => layer.refreshLayer())
 }

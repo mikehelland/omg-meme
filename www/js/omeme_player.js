@@ -772,6 +772,9 @@ OMemePlayer.prototype.sizeCanvas = function () {
 		this.canvas.style.paddingBottom = padding + "px"
 		this.canvas.style.paddingLeft = "0px"
 		this.canvas.style.paddingRight = "0px"
+
+		this.verticalPadding = padding * 2
+		this.horizontalPadding = 0
 	}
 	else {
 		shouldBe = this.canvas.clientHeight * memeRatio
@@ -781,5 +784,8 @@ OMemePlayer.prototype.sizeCanvas = function () {
 		this.canvas.style.paddingRight = padding + "px"
 		this.canvas.style.paddingTop = "0px"
 		this.canvas.style.paddingBottom = "0px"
+
+		this.verticalPadding = 0
+		this.horizontalPadding = padding * 2
 	}
 }
