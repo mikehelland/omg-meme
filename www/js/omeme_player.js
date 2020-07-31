@@ -63,7 +63,7 @@ function OMemePlayer(config) {
 	controlsCanvas.style.marginTop = "3px";
 	controlsCanvas.style.height = "40px";	
 	controlsCanvas.height = 40;
-	controlsCanvas.style.backgroundColor = "#707070";
+	controlsCanvas.style.backgroundColor = "#303030";
 
 	this.controlsContext = controlsCanvas.getContext("2d");		
 	this.context = sceneCanvas.getContext("2d");
@@ -181,9 +181,9 @@ OMemePlayer.prototype.onControlsDown = function(x, y){
 		this.wasPaused = this.paused;
 		this.paused = true;
 
-		var newPosition = x - this.playButtonWidth;
-		newPosition = newPosition / (this.controlsCanvas.clientWidth - (this.playButtonWidth * 2));
-		newPosition = Math.round(newPosition * this.meme.length);
+		var newPosition = x - this.playButtonWidth - this.playButtonWidth / 2
+		newPosition = newPosition / (this.controlsCanvas.clientWidth + this.playButtonWidth - (this.playButtonWidth * 2));
+		newPosition = Math.max(0, Math.round(newPosition * this.meme.length));
 		this.started = Date.now() - newPosition;
 		this.position = newPosition;
 		//this.updateIs = true;
@@ -195,9 +195,9 @@ OMemePlayer.prototype.onControlsDown = function(x, y){
 
 OMemePlayer.prototype.onControlsMove = function(x, y){
 	if (this.controlsStarted === 2){
-		var newPosition = x - this.playButtonWidth;
-		newPosition = newPosition / (this.controlsCanvas.clientWidth - (this.playButtonWidth * 2));
-		newPosition = Math.round(newPosition * this.meme.length);
+		var newPosition = x - this.playButtonWidth - this.playButtonWidth / 2
+		newPosition = newPosition / (this.controlsCanvas.clientWidth + this.playButtonWidth  - (this.playButtonWidth * 2));
+		newPosition = Math.max(0, Math.round(newPosition * this.meme.length));
 		this.started = Date.now() - newPosition;
 		this.position = newPosition;
 		this.updateIs = true;
@@ -220,9 +220,9 @@ OMemePlayer.prototype.onControlsEnd = function (x) {
 			}
 		}
 		else {
-			var newPosition = x - this.playButtonWidth;
-			newPosition = newPosition / (this.controlsCanvas.clientWidth - (this.playButtonWidth * 2));
-			newPosition = Math.round(newPosition * this.meme.length);
+			var newPosition = x - this.playButtonWidth  - this.playButtonWidth / 2
+			newPosition = newPosition / (this.controlsCanvas.clientWidth + this.playButtonWidth - (this.playButtonWidth * 2));
+			newPosition = Math.max(0, Math.round(newPosition * this.meme.length));
 			this.started = Date.now() - newPosition;
 			this.position = newPosition;
 			//this.updateIs = true;
@@ -488,16 +488,23 @@ OMemePlayer.prototype.drawControls = function() {
 							this.playButtonWidth * 0.25, this.controlsCanvas.height * 0.5);	
 	}
 
-	var newPosition = this.controlsCanvas.clientWidth - (this.playButtonWidth * 2);
+	//  add a playbutton width because the timer is a circle and sticks out
+	var newPosition = this.controlsCanvas.clientWidth + this.playButtonWidth - (this.playButtonWidth * 2);
 	newPosition = newPosition * (this.position / this.meme.length);
 	newPosition += this.playButtonWidth;
 	newPosition = Math.min(newPosition, this.controlsCanvas.width - this.playButtonWidth);
 	if (newPosition >= this.playButtonWidth){
 		this.controlsContext.shadowBlur = 10;
-		this.controlsContext.fillStyle = "yellow";
-		this.controlsContext.fillRect(newPosition, 0, this.playButtonWidth, this.controlsCanvas.height);
-		this.controlsContext.strokeRect(newPosition, 0, this.playButtonWidth, this.controlsCanvas.height);
+		this.controlsContext.fillStyle = "red";
+
+		this.controlsContext.beginPath();
+		this.controlsContext.arc(newPosition + this.controlsCanvas.height /  2, this.controlsCanvas.height /  2, this.controlsCanvas.height / 2, 0, Math.PI * 2)
+		this.controlsContext.fill();
 	}
+
+	this.controlsContext.textAlign = "right"
+	this.controlsContext.fillStyle = "white";
+	this.controlsContext.fillText(Math.round(this.meme.length / 100) / 10 + " sec", this.controlsCanvas.width - 22, this.controlsCanvas.height / 2 + 4)
 }
 
 OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
@@ -642,13 +649,13 @@ OMemePlayer.prototype.drawLoading = function() {
 
 
 OMemePlayer.prototype.playButton = function() {
-	var scene = this
-	scene.resetSoundtrack = true;
-	if (!scene.paused){
+	this.resetSoundtrack = true;
+
+	if (!this.paused){
 		this.pause();
 	}
 	else {
-		if (scene.hasPlayed && scene.position < scene.length){
+		if (this.hasPlayed && this.position < this.meme.length){
 			this.resume();
 		}
 		else {
