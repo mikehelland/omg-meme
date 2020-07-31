@@ -7,6 +7,12 @@ function OMemePlayer(config) {
 		return
 	}
 
+	this.musicSection = new OMGSection()
+	this.music = this.musicSection.song
+	this.musicPlayer = new OMusicPlayer()
+	this.musicPlayer.loadFullSoundSets = true
+	this.musicPlayer.prepareSong(this.music)		
+
 	this.paused = true
 	this.position = 0
 
@@ -85,7 +91,12 @@ OMemePlayer.prototype.load = function(meme) {
 				this.loadCharacter(layer);
 				break;
 			case "SOUNDTRACK":
-				this.loadSoundtrack(layer);
+				if (layer.thing.type === "AUDIO") {
+					this.loadAudio(layer);
+				}
+				else {
+					this.loadSoundtrack(layer);
+				}
 				break;
 		}
 	})
@@ -256,22 +267,21 @@ OMemePlayer.prototype.animate = function() {
 	
 	this.drawBackground();
 	
-	var nowInLoop;
 	if (this.paused){
-		nowInLoop = this.position;
+		this.nowInLoop = this.position;
 	}
 	else {
-		nowInLoop = Date.now() - this.started;
-		this.position = nowInLoop;
+		this.nowInLoop = Date.now() - this.started;
+		this.position = this.nowInLoop;
 
-		if (this.onupdateposition) this.onupdateposition(nowInLoop)
+		if (this.onupdateposition) this.onupdateposition(this.nowInLoop)
 	}
 
 	if (this.loading){
 		this.drawLoading();
 	}
-	else if (nowInLoop < 0){
-		this.drawCountIn(Math.abs(nowInLoop/1000));
+	else if (this.nowInLoop < 0){
+		this.drawCountIn(Math.abs(this.nowInLoop/1000));
 	}
 	else {	
 		for (this._animate_i = 0; this._animate_i < this.meme.layers.length; this._animate_i++) {
@@ -282,16 +292,16 @@ OMemePlayer.prototype.animate = function() {
 		
 			switch(this.meme.layers[this._animate_i].type) {
 				case "CHARACTER":
-					this.animateCharacter(this.meme.layers[this._animate_i], nowInLoop)
+					this.animateCharacter(this.meme.layers[this._animate_i], this.nowInLoop)
 					break;
 				case "DIALOG":
-					this.animateDialog(this.meme.layers[this._animate_i], nowInLoop)
+					this.animateDialog(this.meme.layers[this._animate_i], this.nowInLoop)
 					break;
 				case "DOODLE":
-					this.animateDoodle(this.meme.layers[this._animate_i], nowInLoop)
+					this.animateDoodle(this.meme.layers[this._animate_i], this.nowInLoop)
 					break;
 				case "SOUNDTRACK":
-					this.updateSoundtrack(this.meme.layers[this._animate_i], nowInLoop)
+					this.updateSoundtrack(this.meme.layers[this._animate_i], this.nowInLoop)
 					break;
 				}
 		}
@@ -309,13 +319,13 @@ OMemePlayer.prototype.animate = function() {
 					this.drawDialog(this.preview.text, this.preview.x, this.preview.y)
 					break;
 				case "DOODLE":
-					this.animateDoodle(this.meme.layers[this._animate_i], nowInLoop)
+					this.animateDoodle(this.meme.layers[this._animate_i], this.nowInLoop)
 					break;
 			}
 			this.context.globalAlpha = 1
 		}
 		
-		if (nowInLoop > this.meme.length){
+		if (this.nowInLoop > this.meme.length){
 			if (this.recordPastPlay){
 				this.meme.length = this.position;
 			}
@@ -724,14 +734,30 @@ OMemePlayer.prototype.updateSoundtrack = function (soundtrack, nowInLoop) {
 	if (!extras.started) {
 		if (action.time <= nowInLoop) {
 			extras.started = true
-			extras.musicPlayer.play()
+			extras.play()
 		}
 	} 
 	else if (action.time + action.length <= nowInLoop) {
 		extras.started = false
-		extras.musicPlayer.stop()
+		extras.stop()
 		soundtrack.i++
 	}
+}
+
+OMemePlayer.prototype.loadAudio = function (soundtrack, nowInLoop) {
+
+	var blankPart = {soundSet: {name: soundtrack.thing.name, data:[soundtrack.thing], defaultSurface: "PRESET_SEQUENCER"}};
+	//var names = tg.currentSection.parts.map(section => section.data.name);
+	//blankPart.name = omg.util.getUniqueName(soundSet.name, names);
+	var part = new OMGPart(undefined,blankPart, this.musicSection);
+	this.musicPlayer.loadPart(part) //, undefined, () => tg.song.partAdded(part, source));
+
+	let sound = this.musicPlayer.getSound(part, soundtrack.thing.name)
+	let extras = {}
+	extras.play = () => sound.play()
+	extras.stop = () => sound.stop()
+
+	this.layerExtras.set(soundtrack, extras)
 }
 
 OMemePlayer.prototype.loadSoundtrack = function (soundtrack, nowInLoop) {
@@ -743,6 +769,8 @@ OMemePlayer.prototype.loadSoundtrack = function (soundtrack, nowInLoop) {
 	}
 	catch (e) {console.error(e)}
 
+	extras.play = () => extras.musicPlayer.play()
+	extras.stop = () => extras.musicPlayer.stop()
 	this.layerExtras.set(soundtrack, extras)
 }
 

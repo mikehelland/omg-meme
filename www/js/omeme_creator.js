@@ -228,18 +228,31 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 
 	var gallery = tab.pageDiv.getElementsByClassName("search-box")[0];
 
-	var searchBox = this.makeSearchBox(["SONG","AUDIO"])
-	gallery.appendChild(searchBox.div)
-	
-	searchBox.search(v => {
+	var searchBox = this.makeSearchBox(["SONG","SOUNDSET"], (v, e) => {
 
-		var layer = this.addSoundtrack(v.data)
+		let data = v.data
+		let div = v.embedDiv
+
+		if (data.type === "SOUNDSET") {
+			let obj = this.selectSoundFromSoundSet(v, e.target)
+			if (!obj) {
+				return
+			}
+			data = obj.data
+			div = obj.div
+		}
+
+		let layer = this.addSoundtrack(data)
 		
 		this.preview = layer
 		this.player.preview = layer	
 		
-		this.highlightDiv(v.embedDiv)
-	})	
+		this.highlightDiv(div)
+	})
+
+	gallery.appendChild(searchBox.div)
+	
+	searchBox.search()	
 };
 
 MemeCreator.prototype.showDialogTab = function (tab) {
@@ -253,7 +266,8 @@ MemeCreator.prototype.showDialogTab = function (tab) {
 
 	this.preview = this.newDialog()
 	this.player.preview = this.preview
-	//todo unselect current layer
+
+	this.highlightDiv(this.dialogInput)
 
 	this.preview.text = this.dialogInput.value || "enter text"
 
@@ -353,6 +367,8 @@ MemeCreator.prototype.makeDialogLayerDiv = function (dialog) {
 
 	dialog.refreshLayer = () => this.drawActions(dialog.xyt, layer.detailCanvas)
 	dialog.refreshLayer()
+
+	return layer
 };
 
 MemeCreator.prototype.makeSoundLayerDiv = function (sound) {
@@ -368,6 +384,7 @@ MemeCreator.prototype.makeSoundLayerDiv = function (sound) {
 
 	sound.refreshLayer = () => this.drawSoundtrack(sound, layer.detailCanvas)
 	sound.refreshLayer()
+	return layer
 };
 
 MemeCreator.prototype.loadParameters = function () {
@@ -564,14 +581,16 @@ function MemeCanvasEventHandler(memeCreator) {
 			else if (this.memeCreator.mode === "DOODLE"){
 				tool.doodleTouchMove(x, y, tool);
 			}
-			else if (this.memeCreator.mode == "SOUNDTRACK"){
+			else if (this.memeCreator.mode === "SOUNDTRACK"){
 				tool.soundtrackTouchMove(x, y, tool);
 			}
 			else if (this.memeCreator.mode == "VIDEO"){
 				tool.videoTouchMove(x, y, tool);
 			}
 
-			this.memeCreator.refreshLayers()
+			if (this.memeCreator.preview && this.memeCreator.preview.refreshLayer) {
+				this.memeCreator.preview.refreshLayer()
+			}
 		}
 	};
 
@@ -609,9 +628,6 @@ function MemeCanvasEventHandler(memeCreator) {
 				this.memeCreator.preview.xyt.push([x, y, Date.now() - tool.loopCounter])
 				this.memeCreator.preview.xyt.push(["stop", "stop", Date.now() - tool.loopCounter])
 				this.memeCreator.preview.refreshLayer()
-
-				this.player.preview = this.memeCreator.newDialog()
-				this.memeCreator.preview = this.player.preview
 
 				player.recordPastPlay = false;
 				//setTimeout(function(){
@@ -689,7 +705,8 @@ MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
 	if (this.memeCreator.meme.layers.indexOf(this.memeCreator.preview) === -1) {
 		this.memeCreator.preview.i = 0
 		this.memeCreator.meme.layers.push(this.memeCreator.preview)
-		this.memeCreator.makeSoundLayerDiv(this.memeCreator.preview)
+		let layer = this.memeCreator.makeSoundLayerDiv(this.memeCreator.preview)
+		this.memeCreator.highlightDiv(layer.div)
 	}
 }
 
@@ -714,8 +731,7 @@ MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (){
 MemeCanvasEventHandler.prototype.dialogStartTouch = function (x, y) {
 	this.started = true
 	this.memeCreator.preview = this.player.preview
-	this.player.preview = undefined
-
+	
 	this.memeCreator.preview.x = x;
 	this.memeCreator.preview.y = y;
 	
@@ -725,11 +741,14 @@ MemeCanvasEventHandler.prototype.dialogStartTouch = function (x, y) {
 		this.player.resume();
 	}
 	this.loopCounter = Date.now() - time;
-	//var text = memeCreator.dialogInput.value;
 	
 	this.memeCreator.preview.xyt.push([x, y, time])
-	this.player.meme.layers.push(this.memeCreator.preview)
-	this.memeCreator.makeDialogLayerDiv(this.memeCreator.preview);
+
+	if (this.player.meme.layers.indexOf(this.memeCreator.preview) === -1) {
+		this.player.meme.layers.push(this.memeCreator.preview)
+		let layer = this.memeCreator.makeDialogLayerDiv(this.memeCreator.preview);
+		this.memeCreator.highlightDiv(layer.div)
+	}
 }
 
 MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
@@ -744,28 +763,28 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 	}
 	this.loopCounter = Date.now() - time;
 
-	this.doodle = {type: "DOODLE", 
+	mc.preview = {type: "DOODLE", 
 			color: mc.doodles.currentColor, 
 			width: mc.doodles.currentWidth,
 			xyt: [], 
 			i: 0}; // do we need i?
 	
-	this.doodle.xyt.push([x, y, time]);	
+	mc.preview.xyt.push([x, y, time]);	
 
 	this.t = Date.now();
 
 	//todo check to see if we can append or overwrite instead of add
-	mc.meme.layers.push(this.doodle)
-	mc.makeDoodleLayer(this.doodle)
+	mc.meme.layers.push(mc.preview)
+	mc.makeDoodleLayer(mc.preview)
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
-	this.doodle.xyt.push([x, y, Date.now() - this.loopCounter]);
+	this.memeCreator.preview.xyt.push([x, y, Date.now() - this.loopCounter]);
 };
 MemeCanvasEventHandler.prototype.doodleTouchEnd = function (x, y) {
 
-	this.doodle.xyt.push([x, y, Date.now() - this.loopCounter]);
+	this.memeCreator.preview.xyt.push([x, y, Date.now() - this.loopCounter]);
 
-	this.doodle.refreshLayer()
+	this.memeCreator.preview.refreshLayer()
 	this.memeCreator.player.recordPastPlay = false;
 	setTimeout(() => {
 		if (this.memeCreator.paused){
@@ -859,7 +878,7 @@ MemeCreator.prototype.setupCanvasEvents = function () {
 	
 }
 
-MemeCreator.prototype.makeSearchBox = function (types) {
+MemeCreator.prototype.makeSearchBox = function (types, onclickcontent) {
 	var html = `
 		<div class="feed-options">
             <select class="search-user">
@@ -868,7 +887,7 @@ MemeCreator.prototype.makeSearchBox = function (types) {
                 <option value="me">Me</option>
             </select>
             <select class="search-type">
-				<option selected="" value="">All Types</option>
+				<!--<option selected="" value="">All Types</option>-->
 			</select>
             <select class="search-sort">
                 <option value="">Most Recent</option>
@@ -894,9 +913,12 @@ MemeCreator.prototype.makeSearchBox = function (types) {
 		searchType.appendChild(typeOption)
 	})
 
-	searchBox.search = onclickcontent => {
-		omg.search({type: types[0], resultList, 
-			viewerParams: {maxHeight:60, viewMode: "MICRO", onclickcontent}}, true)
+	searchType.onchange = () => searchBox.search()
+	searchBox.search = () => {
+		let params = {type: searchType.value, resultList, 
+			viewerParams: {maxHeight:60, viewMode: "MICRO", onclickcontent}}
+
+		omg.search(params, true)
 	}
 
 	return searchBox
@@ -921,12 +943,9 @@ MemeCreator.prototype.makeLayerDiv = function (layer) {
 
 	header.onclick = () => {
 		
-		if (layer.type === "CHARACTER") {
-			console.log(layer)
-			this.preview = layer
-			this.player.preview = layer
+		this.preview = layer
+		this.player.preview = layer
 			
-		}
 		this.mode = layer.type
 
 		this.highlightDiv(div)
@@ -990,7 +1009,7 @@ MemeCreator.prototype.drawSoundtrack = function (soundtrack, canvas) {
 	for (var i = 0; i < actions.length; i++) {
 		context.fillStyle = "#99FF99"
 		this.fillRoundedRect(actions[i].time / duration * canvas.width, 2,
-						(actions[i].length === -1 ? 1 : (actions[i].length / duration)) * canvas.width, 
+						((actions[i].length || (this.player.position - actions[i].time)) / duration) * canvas.width, 
 						canvas.height - 4,
 						4, context)
 		context.fillStyle = "black"
@@ -1020,6 +1039,11 @@ MemeCreator.prototype.drawSoundtrack = function (soundtrack, canvas) {
 
 MemeCreator.prototype.updatePlayhead = function (position) {
 	
+	if (this.meme.length !== this.lastMemeLength) {
+		this.refreshLayers()
+		this.lastMemeLength = this.meme.length
+	}
+
 	this.playhead.style.left = 72 + 
 		(this.player.controlsCanvas.clientWidth - this.player.playButtonWidth) * 
 		Math.max(0, Math.min(1, position / this.meme.length)) + 
@@ -1060,7 +1084,7 @@ MemeCreator.prototype.setupPanels = function () {
 
 	this.playerDiv.style.height = this.playerDiv.clientHeight + "px"
 	topPanels.style.height = this.playerDiv.style.height
-
+	
 	var originalHeight
 	var originalY
 	topBottomSeparator.onmousedown = e => {
@@ -1212,19 +1236,48 @@ MemeCreator.prototype.addSoundtrack = function (thing) {
 		actions:[],
 		thing: thing
 	}
-	console.log("make soundtrack?")
 				
-	// todo if the viewer has a player... use that?
-	this.player.loadSoundtrack(layer)
+	if (thing.type === "AUDIO") {
+		this.player.loadAudio(layer)
+	}
+	else {
+		this.player.loadSoundtrack(layer)
+	}
 	return layer
 }
 
 MemeCreator.prototype.refreshLayers = function (layer) {
 
-	if (layer && this.meme.duration === this.lastDuration) {
+	/*if (layer && this.meme.duration === this.lastDuration) {
 		layer.refreshLayer()
 		return
-	}
+	}*/
 	
 	this.meme.layers.forEach(layer => layer.refreshLayer())
 }
+
+MemeCreator.prototype.selectSoundFromSoundSet = function (viewer, el) {
+
+	// todo this is all coupled to the class names in the html and css, which is bad
+	
+	if (!el || el.classList.contains("omg-viewer-embedd")) {
+		//this is the whole sound set, doen't help
+		return
+	}
+
+	if (el.classList.contains("omg-soundset-audio-sample")) {
+		let data = viewer.divDataMap.get(el)
+		data.type = "AUDIO" 
+		return {
+			data,
+			div: el
+		}
+	}
+	else {
+		return this.selectSoundFromSoundSet(viewer, el.parentElement)
+	}
+
+
+
+}
+
