@@ -319,7 +319,7 @@ OMemePlayer.prototype.animate = function() {
 					this.drawDialog(this.preview.text, this.preview.x, this.preview.y)
 					break;
 				case "DOODLE":
-					this.animateDoodle(this.meme.layers[this._animate_i], this.nowInLoop)
+					this.previewDoodle(this.preview)
 					break;
 			}
 			this.context.globalAlpha = 1
@@ -675,6 +675,13 @@ OMemePlayer.prototype.addBackground = function(thing, callback, errorCallback){
 	this.meme.background = {thing} 
 	
 	this.loadBackground()
+}
+
+OMemePlayer.prototype.previewDoodle = function (doodle) {
+	
+	this.context.fillStyle = doodle.color;
+	this.context.fillRect(this.canvas.width * doodle.x - doodle.width / 2, this.canvas.height * doodle.y - doodle.width / 2, 
+						doodle.width, doodle.width)
 }
 
 OMemePlayer.prototype.animateDoodle = function (doodle, nowInLoop) {

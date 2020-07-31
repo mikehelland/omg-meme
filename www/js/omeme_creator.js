@@ -81,16 +81,30 @@ MemeCreator.prototype.showTab = function (tab) {
 };
 
 MemeCreator.prototype.showDoodleTab = function (tab) {
-	if (tab.shown)
-		return;
 
-	this.doodles = {currentWidth: 6, currentColor: "#ff0000"}
+	if (!tab.shown) {
+		tab.colorPicker = document.getElementById("doodle-color")
+		tab.colorPicker.onchange = e => this.preview.color = e.target.value
+		tab.sizePicker = document.getElementById("doodle-width")
+		tab.sizePicker.onchange = e => this.preview.width = e.target.value
+	}
 
-	document.getElementById("doodle-color").onchange = e => this.doodles.currentColor = e.target.value
-	document.getElementById("doodle-width").onchange = e => this.doodles.currentWidth = e.target.value
+	this.preview = {
+		type: "DOODLE", 
+		color: tab.colorPicker.value, 
+		width: tab.sizePicker.value,
+		xyt: [], 
+		i: 0
+	};
+
+	this.player.preview = this.preview
+	
 };
 
 MemeCreator.prototype.showBackgroundTab = function (tab) {
+	this.preview = undefined
+	this.player.preview = undefined
+	
 	if (tab.shown)
 		return;
 
@@ -151,7 +165,11 @@ MemeCreator.prototype.addBackground = function (src) {
 	this.player.addBackground(src, false, errorCallback);
 
 };
+
 MemeCreator.prototype.showCharactersTab = function (tab) {
+	this.preview = undefined
+	this.player.preview = undefined
+	
 	if (tab.shown)
 		return;
 
@@ -222,6 +240,9 @@ MemeCreator.prototype.makeCharacterButton = function (character, layer){
 
 MemeCreator.prototype.showSoundsTab = function (tab) {
 	this.mode = "SOUNDTRACK"
+	this.preview = undefined
+	this.player.preview = undefined
+	
 
 	if (tab.shown)
 		return;
@@ -274,6 +295,9 @@ MemeCreator.prototype.showDialogTab = function (tab) {
 };
 
 MemeCreator.prototype.showSaveTab = function (tab) {
+	this.preview = undefined
+	this.player.preview = undefined
+	
 	document.getElementById("post-button").onclick = () => {
 
 		if (this.meme.id) {
@@ -762,12 +786,6 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 		mc.player.resume();
 	}
 	this.loopCounter = Date.now() - time;
-
-	mc.preview = {type: "DOODLE", 
-			color: mc.doodles.currentColor, 
-			width: mc.doodles.currentWidth,
-			xyt: [], 
-			i: 0}; // do we need i?
 	
 	mc.preview.xyt.push([x, y, time]);	
 
