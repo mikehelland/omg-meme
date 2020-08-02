@@ -498,13 +498,13 @@ OMemePlayer.prototype.drawControls = function() {
 		this.controlsContext.fillStyle = "red";
 
 		this.controlsContext.beginPath();
-		this.controlsContext.arc(newPosition + this.controlsCanvas.height /  2, this.controlsCanvas.height /  2, this.controlsCanvas.height / 2, 0, Math.PI * 2)
+		this.controlsContext.arc(newPosition + this.controlsCanvas.height /  2, this.controlsCanvas.height /  2, this.controlsCanvas.height / 2 - 4, 0, Math.PI * 2)
 		this.controlsContext.fill();
 	}
 
 	this.controlsContext.textAlign = "right"
 	this.controlsContext.fillStyle = "white";
-	this.controlsContext.fillText(Math.round(this.meme.length / 100) / 10 + " sec", this.controlsCanvas.width - 22, this.controlsCanvas.height / 2 + 4)
+	this.controlsContext.fillText(Math.round(this.meme.length / 100) / 10 + " sec", this.controlsCanvas.width - 18, this.controlsCanvas.height / 2 + 4)
 }
 
 OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
@@ -748,6 +748,7 @@ OMemePlayer.prototype.updateSoundtrack = function (soundtrack, nowInLoop) {
 	if (!extras.started) {
 		if (action.time <= nowInLoop) {
 			extras.started = true
+			console.log(extras)
 			extras.play()
 		}
 	} 
@@ -760,18 +761,22 @@ OMemePlayer.prototype.updateSoundtrack = function (soundtrack, nowInLoop) {
 
 OMemePlayer.prototype.loadAudio = function (soundtrack, nowInLoop) {
 
+	let extras = {}
+	let sound
 	var blankPart = {soundSet: {name: soundtrack.thing.name, data:[soundtrack.thing], defaultSurface: "PRESET_SEQUENCER"}};
 	//var names = tg.currentSection.parts.map(section => section.data.name);
 	//blankPart.name = omg.util.getUniqueName(soundSet.name, names);
 	var part = new OMGPart(undefined,blankPart, this.musicSection);
-	this.musicPlayer.loadPart(part) //, undefined, () => tg.song.partAdded(part, source));
-
-	let sound = this.musicPlayer.getSound(part, soundtrack.thing.name)
-	let extras = {}
-	extras.play = () => sound.play()
-	extras.stop = () => sound.stop()
+	this.musicPlayer.loadPart(part, undefined, () => {
+		sound = this.musicPlayer.getSound(part, soundtrack.thing.name)	
+		extras.audio = sound.getBuffer()	
+		extras.play = () => sound.play()
+		extras.stop = () => sound.stop()
+		this.onLayerLoaded(soundtrack, extras)
+	})
 
 	this.layerExtras.set(soundtrack, extras)
+	return extras
 }
 
 OMemePlayer.prototype.loadSoundtrack = function (soundtrack, nowInLoop) {
@@ -786,6 +791,7 @@ OMemePlayer.prototype.loadSoundtrack = function (soundtrack, nowInLoop) {
 	extras.play = () => extras.musicPlayer.play()
 	extras.stop = () => extras.musicPlayer.stop()
 	this.layerExtras.set(soundtrack, extras)
+	return extras
 }
 
 OMemePlayer.prototype.getMusicPlayer = function (soundtrack, nowInLoop) {
@@ -829,5 +835,10 @@ OMemePlayer.prototype.sizeCanvas = function () {
 
 		this.verticalPadding = 0
 		this.horizontalPadding = padding * 2
+	}
+}
+OMemePlayer.prototype.onLayerLoaded = function (layer, extras) {
+	if (this.onlayerloaded) {
+		this.onlayerloaded(layer, extras)
 	}
 }

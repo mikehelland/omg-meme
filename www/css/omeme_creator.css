@@ -290,6 +290,7 @@ textarea {
 	position: relative;
 	background-color: #555555;
 	padding:6px;
+	width: 40px;
 }
 
 .meme-layer-detail {
@@ -360,4 +361,22 @@ textarea {
 
 .highlighted {
 	background-color: #35aa1e !important;
+}
+
+
+.meme-layer-soundtrack-action {
+	border:1px solid #808080;
+	border-radius: 4px;
+	background-color: #99FF99;
+	position: absolute;
+	padding:1px 0;
+	height:100%;
+	box-sizing: border-box;
+	cursor: pointer;
+	opacity: 0.7;
+}
+
+.meme-layer-soundtrack-action:hover {
+	border:1px solid black;
+	opacity: 1;
 }

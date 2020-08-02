@@ -17,7 +17,7 @@ function MemeCreator(params) {
 
 	this.player = new OMemePlayer({div: params.playerDiv, controlsDiv: this.playSeekControls});
 	this.player.onupdateposition = (position) => this.updatePlayhead(position)
-
+	this.player.onlayerloaded = (layer, extras) => this.onLayerLoaded(layer, extras)
 	this.loadParameters();
 
 	this.setupPanels()
@@ -395,19 +395,26 @@ MemeCreator.prototype.makeDialogLayerDiv = function (dialog) {
 	return layer
 };
 
-MemeCreator.prototype.makeSoundLayerDiv = function (sound) {
+MemeCreator.prototype.makeSoundLayerDiv = function (layerData) {
 	
-	var layer = this.makeLayerDiv(sound)
+	var layer = this.makeLayerDiv(layerData)
 	var img = document.createElement("img")
 	img.src = this.url + "img/melody.png"
 	layer.header.appendChild(img)
 
-	layer.detailCanvas = document.createElement("canvas")
-	layer.detailCanvas.className = "meme-layer-detail-canvas"
-	layer.detail.appendChild(layer.detailCanvas)
+	layer.actionUIs = []
+	
+	for (var action of layerData.actions) {
+		layer.actionUIs.push(this.makeSoundLayerActionDiv(layer, layerData, action))
+	}
 
-	sound.refreshLayer = () => this.drawSoundtrack(sound, layer.detailCanvas)
-	sound.refreshLayer()
+	//todo referseh layer shouhld not be on the data object!
+	layerData.refreshLayer = () => this.drawSoundtrack(layer)
+	layerData.refreshLayer()
+
+	let extras = this.player.layerExtras.get(layerData)
+	extras.editorUI = layer
+
 	return layer
 };
 
@@ -431,7 +438,8 @@ MemeCreator.prototype.loadParameters = function () {
 	if (params.use) {
 		this.useThing(params.use)
 	}
-	else {
+
+	if (!params.id && !params.use) {
 		this.player.load({
 			type: "MEME",
 			width: 480,
@@ -724,14 +732,22 @@ MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
 	this.loopCounter = Date.now() - time;
 	//var text = memeCreator.dialogInput.value;
 	
-	this.action = {action: "play", time}
-	this.memeCreator.preview.actions.push(this.action)
+	let layerUI
 	if (this.memeCreator.meme.layers.indexOf(this.memeCreator.preview) === -1) {
 		this.memeCreator.preview.i = 0
 		this.memeCreator.meme.layers.push(this.memeCreator.preview)
-		let layer = this.memeCreator.makeSoundLayerDiv(this.memeCreator.preview)
-		this.memeCreator.highlightDiv(layer.div)
+		layerUI = this.memeCreator.makeSoundLayerDiv(this.memeCreator.preview)
+		this.memeCreator.highlightDiv(layerUI.div)
 	}
+	else {
+		layerUI = this.player.layerExtras.get(this.memeCreator.preview).editorUI
+	}
+
+	this.action = {action: "play", time}
+	this.memeCreator.preview.actions.push(this.action)
+	
+	let actionUI = this.memeCreator.makeSoundLayerActionDiv(layerUI, this.memeCreator.preview, this.action)
+	layerUI.actionUIs.push(actionUI)
 }
 
 MemeCanvasEventHandler.prototype.soundtrackTouchMove = function (x, y, tool){}
@@ -1013,46 +1029,13 @@ MemeCreator.prototype.drawActions = function (actions, canvas) {
 	}
 }
 
-MemeCreator.prototype.drawSoundtrack = function (soundtrack, canvas) {
-	var actions = soundtrack.actions
-	var context = canvas.getContext("2d")
-	canvas.width = canvas.clientWidth
-	canvas.height = canvas.clientHeight
-
-	var middle = canvas.height / 2
-	var duration = this.player.meme.length
-
-	//document.createElement("canvas").getContext("2d").
+MemeCreator.prototype.drawSoundtrack = function (layer, canvas) {
+	var actions = layer.actionUIs
 	
 	for (var i = 0; i < actions.length; i++) {
-		context.fillStyle = "#99FF99"
-		this.fillRoundedRect(actions[i].time / duration * canvas.width, 2,
-						((actions[i].length || (this.player.position - actions[i].time)) / duration) * canvas.width, 
-						canvas.height - 4,
-						4, context)
-		context.fillStyle = "black"
-		context.fillText(soundtrack.thing.name, actions[i].time / duration * canvas.width + 4, 14)
+		this.positionSoundLayerAction(layer, actions[i].data, actions[i].canvas)
 	}
 
-	context.lineWidth = 2
-	var last, d
-	for (var j = 0; j < 2; j++) {
-		context.strokeStyle = j ? "red" : "blue"
-		for (var i = 0; i < actions.length; i++) {
-			if (i === 0) {
-				context.beginPath()
-				context.moveTo(actions[i][2] / duration * canvas.width, middle)
-			}
-			else {
-				if (actions[i][j] !== "stop") {
-					d = (actions[i][j] - last) * canvas.height * 2
-					context.lineTo(actions[i][2] / duration * canvas.width, middle - d)
-				}
-			}
-			last = actions[i][j]
-		}
-		context.stroke()
-	}
 }
 
 MemeCreator.prototype.updatePlayhead = function (position) {
@@ -1297,5 +1280,70 @@ MemeCreator.prototype.selectSoundFromSoundSet = function (viewer, el) {
 
 
 
+}
+
+MemeCreator.prototype.makeSoundLayerActionDiv = function (layerUI, layerData, actionData) {
+console.log("make action div")
+	let action = {data: actionData}
+	action.canvas = document.createElement("canvas")
+	action.canvas.className = "meme-layer-soundtrack-action"
+
+	this.positionSoundLayerAction(layerUI, actionData, action.canvas)
+
+	layerUI.detail.appendChild(action.canvas)
+	
+	this.drawAudioCanvas(layerData, action.canvas)
+	return action
+}
+
+MemeCreator.prototype.positionSoundLayerAction = function (layerUI, action, actionUI) {
+
+	let duration = this.player.meme.length
+	
+	actionUI.style.left = action.time / duration * layerUI.detail.clientWidth + "px"	
+	actionUI.style.width = ((action.length || (this.player.position - action.time)) / duration) * layerUI.detail.clientWidth + "px"
+
+}
+
+
+MemeCreator.prototype.drawAudioCanvas = function (layer, canvas) {
+	//context.fillStyle = "black"
+	//context.fillText(soundtrack.thing.name, actions[i].time / duration * canvas.width + 4, 14)
+
+	let context = canvas.getContext("2d")
+	let buffer = this.player.layerExtras.get(layer).audio
+	
+	console.log(this.player.layerExtras.get(layer))
+	if (!buffer) return;
+
+	var data = buffer.getChannelData( 0 );
+	var step = Math.ceil( data.length / canvas.width );
+	var amp = canvas.height / 2;
+	for(var ii=0; ii < canvas.width; ii++){
+		var min = 1.0;
+		var max = -1.0;
+		for (var j=0; j<step; j++) {
+			var datum = data[(ii*step)+j]; 
+			if (datum < min)
+				min = datum;
+			if (datum > max)
+				max = datum;
+		}
+		context.fillRect(ii,(1+min)*amp,1,Math.max(1,(max-min)*amp));
+	}
+}
+
+MemeCreator.prototype.onLayerLoaded = function (layer, extras) {
+	if (layer.type === "SOUNDTRACK") {
+
+		if (layer.thing.type === "AUDIO") {
+			if (extras.editorUI) {
+				for (var ui of extras.editorUI.actionUIs) {
+					this.drawAudioCanvas(layer, ui.canvas)
+				}
+			}
+		}
+
+	}
 }
 
