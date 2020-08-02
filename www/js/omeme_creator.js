@@ -761,7 +761,7 @@ MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function () {
 	}
 
 	this.player.recordPastPlay = false;
-	
+
 	this.memeCreator.preview.refreshLayer()
 
 	this.started = 0
@@ -1292,6 +1292,20 @@ MemeCreator.prototype.makeSoundLayerActionDiv = function (layerUI, layerData, ac
 	this.positionSoundLayerAction(layerUI, actionData, action.canvas)
 
 	layerUI.detail.appendChild(action.canvas)
+
+	let parentX = omg.ui.totalOffsets(layerUI.detail).left
+
+	omg.ui.makeDraggable(action.canvas, action.data, {
+		onstart: (x, y, context) => {
+			context.offsetX = x - omg.ui.totalOffsets(action.canvas).left
+		},
+		onmove: (x, y, context) => {
+			actionData.time = Math.min(this.meme.length - actionData.length, Math.max(0, 
+				(x - parentX - context.offsetX) / layerUI.detail.clientWidth * this.meme.length))
+		
+			this.positionSoundLayerAction(layerUI, actionData, action.canvas)		 
+		}
+	})
 	
 	this.drawSoundtrackCanvas(layerData, action.canvas)
 	return action
