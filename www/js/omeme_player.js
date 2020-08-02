@@ -722,7 +722,7 @@ OMemePlayer.prototype.animateDoodle = function (doodle, nowInLoop) {
 
 OMemePlayer.prototype.updateSoundtrack = function (soundtrack, nowInLoop) {
 	
-	//console.log(soundtrack)
+	//todo seek
 	if (false && this.seek) {
 		soundtrack.i = 0
 		for (var i = 0; i < soundtrack.actions.length; i++) {
@@ -748,7 +748,6 @@ OMemePlayer.prototype.updateSoundtrack = function (soundtrack, nowInLoop) {
 	if (!extras.started) {
 		if (action.time <= nowInLoop) {
 			extras.started = true
-			console.log(extras)
 			extras.play()
 		}
 	} 

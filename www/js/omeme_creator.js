@@ -7,9 +7,7 @@ function MemeCreator(params) {
 	this.playerDiv = params.playerDiv
 	this.setupTabs();
 
-	//todo make this a color picker or something
-	this.colors = ["#FFFFFF", "#808080", "#FF0000", "#FFFF00", 
-				  "#00FF00", "#00FFFF", "#0000FF", "#800080"]
+	this.musicDrawer = new OMGEmbeddedViewerMusicDrawer()
 
 	this.playSeekControls = document.getElementById("play-seek-controls")
 	this.playhead = document.getElementById("playhead")
@@ -1285,7 +1283,7 @@ MemeCreator.prototype.selectSoundFromSoundSet = function (viewer, el) {
 }
 
 MemeCreator.prototype.makeSoundLayerActionDiv = function (layerUI, layerData, actionData) {
-console.log("make action div")
+
 	let action = {data: actionData}
 	action.canvas = document.createElement("canvas")
 	action.canvas.className = "meme-layer-soundtrack-action"
@@ -1294,7 +1292,7 @@ console.log("make action div")
 
 	layerUI.detail.appendChild(action.canvas)
 	
-	this.drawAudioCanvas(layerData, action.canvas)
+	this.drawSoundtrackCanvas(layerData, action.canvas)
 	return action
 }
 
@@ -1311,11 +1309,10 @@ MemeCreator.prototype.positionSoundLayerAction = function (layerUI, action, acti
 MemeCreator.prototype.drawAudioCanvas = function (layer, canvas) {
 	//context.fillStyle = "black"
 	//context.fillText(soundtrack.thing.name, actions[i].time / duration * canvas.width + 4, 14)
-
+ 
 	let context = canvas.getContext("2d")
 	let buffer = this.player.layerExtras.get(layer).audio
-	
-	console.log(this.player.layerExtras.get(layer))
+
 	if (!buffer) return;
 
 	var data = buffer.getChannelData( 0 );
@@ -1335,14 +1332,21 @@ MemeCreator.prototype.drawAudioCanvas = function (layer, canvas) {
 	}
 }
 
+MemeCreator.prototype.drawSoundtrackCanvas = function (layer, canvas) {
+	if (layer.thing.type === "AUDIO") {
+		this.drawAudioCanvas(layer, canvas)
+		return
+	}
+
+	this.musicDrawer.drawCanvas(layer.thing, canvas)
+}
+
 MemeCreator.prototype.onLayerLoaded = function (layer, extras) {
 	if (layer.type === "SOUNDTRACK") {
 
-		if (layer.thing.type === "AUDIO") {
-			if (extras.editorUI) {
-				for (var ui of extras.editorUI.actionUIs) {
-					this.drawAudioCanvas(layer, ui.canvas)
-				}
+		if (extras.editorUI) {
+			for (var ui of extras.editorUI.actionUIs) {
+				this.drawSoundtrackCanvas(layer, ui.canvas)
 			}
 		}
 
