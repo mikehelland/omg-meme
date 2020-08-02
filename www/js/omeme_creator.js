@@ -750,18 +750,19 @@ MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
 
 MemeCanvasEventHandler.prototype.soundtrackTouchMove = function (x, y, tool){}
 
-MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function (){
-	this.action.length = Date.now() - this.startTime	
+MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function () {
+	let now = Date.now()
+
+	//this makes sure our sound doesn't go off the end of the scene
+	//todo do this for all media types
+	this.action.length = now - this.startTime
+	if (this.player.meme.length < now - this.player.started) {
+		this.player.meme.length = now - this.player.started	
+	}
+
 	this.player.recordPastPlay = false;
+	
 	this.memeCreator.preview.refreshLayer()
-	setTimeout(function(){
-		if (this.paused){
-			playButton();
-		}
-		else {
-			//TODO may have to add this to playList
-		}
-	}, 20);
 
 	this.started = 0
 }
