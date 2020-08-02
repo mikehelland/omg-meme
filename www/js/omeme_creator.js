@@ -1268,9 +1268,11 @@ MemeCreator.prototype.selectSoundFromSoundSet = function (viewer, el) {
 
 	if (el.classList.contains("omg-soundset-audio-sample")) {
 		let data = viewer.divDataMap.get(el)
-		data.type = "AUDIO" 
+		let item = JSON.parse(JSON.stringify(data.item))
+		item.type = "AUDIO"
+		item.url = data.src 
 		return {
-			data,
+			data: item,
 			div: el
 		}
 	}
