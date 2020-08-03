@@ -694,28 +694,36 @@ OMemePlayer.prototype.previewDoodle = function (doodle) {
 OMemePlayer.prototype.animateDoodle = function (doodle, nowInLoop) {
 	
 	var drawn = false;
+	var start = true
 	this.context.lineWidth = doodle.width;
-	
+	this.context.strokeStyle = doodle.color; 
+		
 	for (var j = 0; j < doodle.xyt.length; j++) {
 	
 		if (doodle.xyt[j][2] > nowInLoop){
 			break;
 		}
 	
-		if (!drawn) {
+		if (!drawn || start) {
 			drawn = true;
+			start = false
 			this.context.beginPath();
 			this.context.moveTo(doodle.xyt[j][0] * this.canvas.width, 
 								doodle.xyt[j][1] * this.canvas.height);
 		}
 		else {
-			this.context.lineTo(doodle.xyt[j][0] * this.canvas.width, 
+			if (doodle.xyt[j][0] === -1) {
+				start = true
+				this.context.stroke();
+			}
+			else {
+				this.context.lineTo(doodle.xyt[j][0] * this.canvas.width, 
 								doodle.xyt[j][1] * this.canvas.height);
+			}
 		}
 	}
 
 	if (drawn) {
-		this.context.strokeStyle = doodle.color; 
 		this.context.stroke();
 	}	
 }

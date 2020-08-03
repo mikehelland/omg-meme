@@ -631,8 +631,8 @@ function MemeCanvasEventHandler(memeCreator) {
 	}
 
 	this.end = function (x, y) {
-		x = x / player.canvas.clientWidth
-		y = y / player.canvas.clientHeight
+		x = (x - player.horizontalPadding / 2) / (player.canvas.clientWidth - player.horizontalPadding)
+		y = (y - player.verticalPadding / 2) / (player.canvas.clientHeight - player.verticalPadding)
 		
 		if (tool.started) {
 			tool.started = false;
@@ -806,29 +806,20 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 
 	this.t = Date.now();
 
-	//todo check to see if we can append or overwrite instead of add
-	mc.meme.layers.push(mc.preview)
-	mc.makeDoodleLayer(mc.preview)
+	if (mc.meme.layers.indexOf(mc.preview) === -1) {
+		mc.meme.layers.push(mc.preview)
+		mc.makeDoodleLayer(mc.preview)
+	}
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
 	this.memeCreator.preview.xyt.push([x, y, Date.now() - this.loopCounter]);
 };
 MemeCanvasEventHandler.prototype.doodleTouchEnd = function (x, y) {
 
-	this.memeCreator.preview.xyt.push([x, y, Date.now() - this.loopCounter]);
+	this.memeCreator.preview.xyt.push([-1, -1, Date.now() - this.loopCounter]);
 
 	this.memeCreator.preview.refreshLayer()
 	this.memeCreator.player.recordPastPlay = false;
-	setTimeout(() => {
-		if (this.memeCreator.paused){
-			
-			//playButton();
-		}
-		else {
-			//TODO may have to add this to playList
-			// not sure what that comment means
-		}
-	}, 20);
 };
 
 
@@ -1017,7 +1008,7 @@ MemeCreator.prototype.drawActions = function (actions, canvas) {
 				context.moveTo(actions[i][2] / duration * canvas.width, middle)
 			}
 			else {
-				if (actions[i][j] !== "stop") {
+				if (actions[i][j] !== -1 && last !== -1) {
 					d = (actions[i][j] - last) * canvas.height * 5
 					context.lineTo(actions[i][2] / duration * canvas.width, middle - d)
 				}
