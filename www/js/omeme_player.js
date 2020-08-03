@@ -7,12 +7,6 @@ function OMemePlayer(config) {
 		return
 	}
 
-	this.musicSection = new OMGSection()
-	this.music = this.musicSection.song
-	this.musicPlayer = new OMusicPlayer()
-	this.musicPlayer.loadFullSoundSets = true
-	this.musicPlayer.prepareSong(this.music)		
-
 	this.paused = true
 	this.position = 0
 
@@ -768,6 +762,14 @@ OMemePlayer.prototype.updateSoundtrack = function (soundtrack, nowInLoop) {
 
 OMemePlayer.prototype.loadAudio = function (soundtrack, nowInLoop) {
 
+	if (!this.musicPlayer) {
+		this.musicSection = new OMGSection()
+		this.music = this.musicSection.song
+		this.musicPlayer = new OMusicPlayer()
+		this.musicPlayer.loadFullSoundSets = true
+		this.musicPlayer.prepareSong(this.music)
+	}
+	
 	let extras = {}
 	let sound
 	var blankPart = {soundSet: {name: soundtrack.thing.name, data:[soundtrack.thing], defaultSurface: "PRESET_SEQUENCER"}};
