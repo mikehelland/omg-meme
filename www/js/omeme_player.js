@@ -769,7 +769,7 @@ OMemePlayer.prototype.loadAudio = function (soundtrack, nowInLoop) {
 		this.musicPlayer.loadFullSoundSets = true
 		this.musicPlayer.prepareSong(this.music)
 	}
-	
+
 	let extras = {}
 	let sound
 	var blankPart = {soundSet: {name: soundtrack.thing.name, data:[soundtrack.thing], defaultSurface: "PRESET_SEQUENCER"}};
@@ -788,14 +788,20 @@ OMemePlayer.prototype.loadAudio = function (soundtrack, nowInLoop) {
 	return extras
 }
 
-OMemePlayer.prototype.loadSoundtrack = function (soundtrack, nowInLoop) {
+OMemePlayer.prototype.loadSoundtrack = function (soundtrack, player) {
 	let extras = {}
-	try {
-		extras.song = OMGSong.prototype.make(soundtrack.thing)
-		extras.musicPlayer = new OMusicPlayer()
-		extras.musicPlayer.prepareSong(extras.song)	
+	if (player) {
+		extras.song = player.song
+		extras.musicPlayer = player
 	}
-	catch (e) {console.error(e)}
+	else {
+		try {
+			extras.song = OMGSong.prototype.make(soundtrack.thing)
+			extras.musicPlayer = new OMusicPlayer()
+			extras.musicPlayer.prepareSong(extras.song)	
+		}
+		catch (e) {console.error(e)}
+	}
 
 	extras.play = () => extras.musicPlayer.play()
 	extras.stop = () => extras.musicPlayer.stop()

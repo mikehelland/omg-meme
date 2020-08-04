@@ -380,3 +380,18 @@ textarea {
 	border:1px solid black;
 	opacity: 1;
 }
+
+#soundtrack-remixer {
+	position:absolute;
+	top:48px;
+	left:4px;
+	width:50%;
+	height:50%;
+	display:none;
+}
+
+#soundtrack-remixer iframe {
+	height:100%;
+	width:100%;
+	border: none;
+}

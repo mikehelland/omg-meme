@@ -241,11 +241,28 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 	this.preview = undefined
 	this.player.preview = undefined
 	
+	if (tab.browsePage) {
+		tab.browsePage.style.display = "block"
+	}
+
+	if (this.remixerParent) {
+		this.remixerParent.style.display = "none"
+	}
+	
 
 	if (tab.shown)
 		return;
 
+	tab.recordButton = document.getElementById("soundtrack-browse")
+	tab.createButton = document.getElementById("soundtrack-create")
+	tab.browsePage = document.getElementById("soundtrack-browse")
 	var gallery = tab.pageDiv.getElementsByClassName("search-box")[0];
+
+
+	tab.createButton.onclick = e => {
+		tab.browsePage.style.display = "none"
+		this.showRemixer()
+	}
 
 	var searchBox = this.makeSearchBox(["SONG","SOUNDSET"], (v, e) => {
 
@@ -719,6 +736,12 @@ MemeCanvasEventHandler.prototype.characterStartTouch = function (x, y) {
 }
 
 MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
+	
+	if (this.startTime) {
+		this.soundtrackFinish()
+		return 
+	}
+
 	this.started = true
 	this.startTime = Date.now()
 
@@ -751,6 +774,16 @@ MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
 MemeCanvasEventHandler.prototype.soundtrackTouchMove = function (x, y, tool){}
 
 MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function () {
+	
+	if (Date.now() - this.startTime < 200) {
+		return // short click, let the music play
+	}
+
+	this.soundtrackFinish()
+
+}
+
+MemeCanvasEventHandler.prototype.soundtrackFinish = function () {
 	let now = Date.now()
 
 	//this makes sure our sound doesn't go off the end of the scene
@@ -764,7 +797,8 @@ MemeCanvasEventHandler.prototype.soundtrackTouchEnd = function () {
 
 	this.memeCreator.preview.refreshLayer()
 
-	this.started = 0
+	this.startTime = 0
+	this.started = false
 }
 
 MemeCanvasEventHandler.prototype.dialogStartTouch = function (x, y) {
@@ -900,6 +934,7 @@ MemeCreator.prototype.setupCanvasEvents = function () {
 	canvas.addEventListener("touchmove", tool.touchmove, false);
 	canvas.addEventListener("touchend",   tool.touchend, false);
 	
+	this.canvasEventHandler = tool
 }
 
 MemeCreator.prototype.makeSearchBox = function (types, onclickcontent) {
@@ -1094,6 +1129,10 @@ MemeCreator.prototype.setupPanels = function () {
 				topPanels.style.height = this.playerDiv.style.height
 
 				this.player.sizeCanvas()
+
+				if (this.remixer) {
+					this.remixer.style.height = originalHeight - (originalY - e.clientY) - 48 + "px"
+				}
 			}
 		}
 
@@ -1221,7 +1260,7 @@ MemeCreator.prototype.useThing = function (thingId) {
 	})
 }
 
-MemeCreator.prototype.addSoundtrack = function (thing) {
+MemeCreator.prototype.addSoundtrack = function (thing, player) {
 	var layer = {
 		type: "SOUNDTRACK",
 		actions:[],
@@ -1232,7 +1271,7 @@ MemeCreator.prototype.addSoundtrack = function (thing) {
 		this.player.loadAudio(layer)
 	}
 	else {
-		this.player.loadSoundtrack(layer)
+		this.player.loadSoundtrack(layer, player)
 	}
 	return layer
 }
@@ -1357,5 +1396,30 @@ MemeCreator.prototype.onLayerLoaded = function (layer, extras) {
 		}
 
 	}
+}
+
+MemeCreator.prototype.showRemixer = function () {
+	if (!this.remixer ) {
+		this.remixer = document.createElement("iframe")
+
+		this.remixer.onload = () => {
+			let layer = this.addSoundtrack(this.remixer.contentWindow.tg.song.data, this.remixer.contentWindow.tg.player)
+			this.preview = layer
+			this.player.preview = layer	
+		}
+
+		this.remixer.src = "/apps/music/remixer/?singlePanel"
+		this.remixerParent = document.getElementById("soundtrack-remixer")
+		this.remixerParent.appendChild(this.remixer)
+		
+	}
+	
+		
+	
+	//this.highlightDiv(div)
+
+	this.remixerParent.style.display = "block"
+	this.remixerParent.style.height = this.playerDiv.clientHeight - this.remixerParent.offsetTop + "px"
+	
 }
 
