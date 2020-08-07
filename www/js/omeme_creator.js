@@ -764,11 +764,15 @@ MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
 		layerUI = this.player.layerExtras.get(this.memeCreator.preview).editorUI
 	}
 
-	this.action = {action: "play", time}
+	this.action = {action: "play", time, totalSubbeats: 0}
 	this.memeCreator.preview.actions.push(this.action)
 	
 	let actionUI = this.memeCreator.makeSoundLayerActionDiv(layerUI, this.memeCreator.preview, this.action)
 	layerUI.actionUIs.push(actionUI)
+
+	if (this.memeCreator.preview.thing.type === "SONG") {
+		this.memeCreator.setupSoundtrackRecording(actionUI)
+	}
 }
 
 MemeCanvasEventHandler.prototype.soundtrackTouchMove = function (x, y, tool){}
@@ -1031,8 +1035,6 @@ MemeCreator.prototype.drawActions = function (actions, canvas) {
 	var middle = canvas.height / 2
 	var duration = this.player.meme.length
 
-	//document.createElement("canvas").getContext("2d").
-	
 	context.lineWidth = 2
 	var last, d
 	for (var j = 0; j < 2; j++) {
@@ -1130,8 +1132,8 @@ MemeCreator.prototype.setupPanels = function () {
 
 				this.player.sizeCanvas()
 
-				if (this.remixer) {
-					this.remixer.style.height = originalHeight - (originalY - e.clientY) - 48 + "px"
+				if (this.remixerEl) {
+					this.remixerEl.style.height = originalHeight - (originalY - e.clientY) - 48 + "px"
 				}
 			}
 		}
@@ -1158,7 +1160,7 @@ MemeCreator.prototype.newDialog = function () {
 MemeCreator.prototype.setupHotKeys = function () {
 
 	document.body.onkeypress = e => {
-		if (e.charCode === 32) { 
+		if (e.charCode === 32 && e.target.tagName === "BODY") { 
 			if (this.player.paused) {
 				if (this.player.position >= this.meme.length) {
 					this.player.play()
@@ -1337,13 +1339,13 @@ MemeCreator.prototype.makeSoundLayerActionDiv = function (layerUI, layerData, ac
 		}
 	})
 	
-	this.drawSoundtrackCanvas(layerData, action.canvas)
+	this.drawSoundtrackCanvas(layerData, action)
 	return action
 }
 
 MemeCreator.prototype.positionSoundLayerAction = function (layerUI, action, actionUI) {
 
-	let duration = this.player.meme.length
+	let duration = this.player.position > this.player.meme.length ? this.player.position : this.player.meme.length
 	
 	actionUI.style.left = action.time / duration * layerUI.detail.clientWidth + "px"	
 	actionUI.style.width = ((action.length || (this.player.position - action.time)) / duration) * layerUI.detail.clientWidth + "px"
@@ -1377,21 +1379,21 @@ MemeCreator.prototype.drawAudioCanvas = function (layer, canvas) {
 	}
 }
 
-MemeCreator.prototype.drawSoundtrackCanvas = function (layer, canvas) {
+MemeCreator.prototype.drawSoundtrackCanvas = function (layer, action) {
 	if (layer.thing.type === "AUDIO") {
-		this.drawAudioCanvas(layer, canvas)
+		this.drawAudioCanvas(layer, action.canvas)
 		return
 	}
 
-	this.musicDrawer.drawCanvas(layer.thing, canvas)
+	this.musicDrawer.drawCanvas(layer.thing, action.canvas, action.data.totalSubbeats)
 }
 
 MemeCreator.prototype.onLayerLoaded = function (layer, extras) {
 	if (layer.type === "SOUNDTRACK") {
 
 		if (extras.editorUI) {
-			for (var ui of extras.editorUI.actionUIs) {
-				this.drawSoundtrackCanvas(layer, ui.canvas)
+			for (var actionUI of extras.editorUI.actionUIs) {
+				this.drawSoundtrackCanvas(layer, actionUI)
 			}
 		}
 
@@ -1399,22 +1401,23 @@ MemeCreator.prototype.onLayerLoaded = function (layer, extras) {
 }
 
 MemeCreator.prototype.showRemixer = function () {
-	if (!this.remixer ) {
-		this.remixer = document.createElement("iframe")
+	if (!this.remixerEl ) {
+		this.remixerEl = document.createElement("iframe")
 
-		this.remixer.onload = () => {
-			let layer = this.addSoundtrack(this.remixer.contentWindow.tg.song.data, this.remixer.contentWindow.tg.player)
+		this.remixerEl.onload = () => {
+			this.remixer = this.remixerEl.contentWindow.tg
+			let layer = this.addSoundtrack(this.remixer.song.data, this.remixer.player)
 			this.preview = layer
 			this.player.preview = layer	
 		}
 
-		this.remixer.src = "/apps/music/remixer/?singlePanel"
+		this.remixerEl.src = "/apps/music/remixer/?singlePanel"
 		this.remixerParent = document.getElementById("soundtrack-remixer")
-		this.remixerParent.appendChild(this.remixer)
+		this.remixerParent.appendChild(this.remixerEl)
 		
 	}
 	
-		
+	this.isRemixerShowing = true	
 	
 	//this.highlightDiv(div)
 
@@ -1423,3 +1426,25 @@ MemeCreator.prototype.showRemixer = function () {
 	
 }
 
+MemeCreator.prototype.setupSoundtrackRecording = function (clip) {
+
+	let extras = this.player.layerExtras.get(this.preview)
+	
+	let remixerBeatPlayedListener = (subbeat) => {
+
+		if (subbeat === -1) {
+			let i = extras.musicPlayer.onBeatPlayedListeners.indexOf(remixerBeatPlayedListener)
+			if (i > -1) {
+				extras.musicPlayer.onBeatPlayedListeners.splice(i, 1)
+			}
+			return
+		}
+
+		clip.data.totalSubbeats++
+	
+		this.musicDrawer.drawCanvas(this.preview.thing, clip.canvas, clip.data.totalSubbeats)
+	}
+
+	//this.musicDrawer.drawCanvas(this.preview.thing, clip.canvas, clip.data.totalSubbeats)
+	extras.musicPlayer.onBeatPlayedListeners.push(remixerBeatPlayedListener)
+}

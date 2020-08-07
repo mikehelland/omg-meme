@@ -809,19 +809,6 @@ OMemePlayer.prototype.loadSoundtrack = function (soundtrack, player) {
 	return extras
 }
 
-OMemePlayer.prototype.getMusicPlayer = function (soundtrack, nowInLoop) {
-	if (this.musicPlayer) {
-		return this.musicPlayer
-	}
-
-	let promise = new Promise((resolve, reject) => {
-		let musicPlayer = new OMusicPlayer()
-		this.musicPlayer = musicPlayer
-		resolve(musicPlayer) 
-	})
-	return promise
-}
-
 OMemePlayer.prototype.sizeCanvas = function () {
 	var memeRatio = this.width / this.height
 	var canvasRatio = this.canvas.clientWidth / this.canvas.clientHeight
