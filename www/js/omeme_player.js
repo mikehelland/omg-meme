@@ -175,8 +175,8 @@ OMemePlayer.prototype.onControlsDown = function(x, y){
 		this.wasPaused = this.paused;
 		this.paused = true;
 
-		var newPosition = x - this.playButtonWidth - this.playButtonWidth / 2
-		newPosition = newPosition / (this.controlsCanvas.clientWidth + this.playButtonWidth - (this.playButtonWidth * 2));
+		var newPosition = x - this.playButtonWidth
+		newPosition = newPosition / (this.controlsCanvas.clientWidth - this.playButtonWidth);
 		newPosition = Math.max(0, Math.round(newPosition * this.meme.length));
 		this.started = Date.now() - newPosition;
 		this.position = newPosition;
@@ -189,8 +189,8 @@ OMemePlayer.prototype.onControlsDown = function(x, y){
 
 OMemePlayer.prototype.onControlsMove = function(x, y){
 	if (this.controlsStarted === 2){
-		var newPosition = x - this.playButtonWidth - this.playButtonWidth / 2
-		newPosition = newPosition / (this.controlsCanvas.clientWidth + this.playButtonWidth  - (this.playButtonWidth * 2));
+		var newPosition = x - this.playButtonWidth
+		newPosition = newPosition / (this.controlsCanvas.clientWidth - this.playButtonWidth);
 		newPosition = Math.max(0, Math.round(newPosition * this.meme.length));
 		this.started = Date.now() - newPosition;
 		this.position = newPosition;
@@ -214,8 +214,8 @@ OMemePlayer.prototype.onControlsEnd = function (x) {
 			}
 		}
 		else {
-			var newPosition = x - this.playButtonWidth  - this.playButtonWidth / 2
-			newPosition = newPosition / (this.controlsCanvas.clientWidth + this.playButtonWidth - (this.playButtonWidth * 2));
+			var newPosition = x - this.playButtonWidth
+			newPosition = newPosition / (this.controlsCanvas.clientWidth - this.playButtonWidth);
 			newPosition = Math.max(0, Math.round(newPosition * this.meme.length));
 			this.started = Date.now() - newPosition;
 			this.position = newPosition;
@@ -462,10 +462,28 @@ OMemePlayer.prototype.drawControls = function() {
 	this.controlsContext.shadowBlur = 2;
 	this.controlsContext.shadowColor = "black";
 
-	this.controlsContext.clearRect(0, 0, this.controlsCanvas.width, this.controlsCanvas.height);	
+	this.controlsCanvas.width = this.controlsCanvas.clientWidth;
+	
+	var newPosition = this.controlsCanvas.clientWidth - (this.playButtonWidth * 2);
+	newPosition = this.position / this.meme.length * (this.controlsCanvas.clientWidth - this.playButtonWidth);
+	newPosition += this.playButtonWidth;
+	newPosition = Math.min(newPosition, this.controlsCanvas.width)
+	if (newPosition >= this.playButtonWidth){
+		this.controlsContext.shadowBlur = 10;
+		this.controlsContext.fillStyle = "red";
+
+		this.controlsContext.beginPath();
+		this.controlsContext.arc(newPosition, this.controlsCanvas.height /  2, this.controlsCanvas.height / 2 - 4, 0, Math.PI * 2)
+		this.controlsContext.fill();
+	}
+
+	this.controlsContext.textAlign = "right"
 	this.controlsContext.fillStyle = "white";
-	this.controlsContext.fillRect(0, 0, this.playButtonWidth, this.controlsCanvas.height);
+	this.controlsContext.fillText(Math.round(this.meme.length / 100) / 10 + " sec", this.controlsCanvas.width - 18, this.controlsCanvas.height / 2 + 4)
+
 	this.controlsContext.fillStyle = "black";
+	this.controlsContext.fillRect(0, 0, this.playButtonWidth, this.controlsCanvas.height);
+	this.controlsContext.fillStyle = "white";
 	this.controlsContext.strokeStyle = "black";
 	if (this.paused){
 		this.controlsContext.beginPath();
@@ -482,23 +500,6 @@ OMemePlayer.prototype.drawControls = function() {
 							this.playButtonWidth * 0.25, this.controlsCanvas.height * 0.5);	
 	}
 
-	//  add a playbutton width because the timer is a circle and sticks out
-	var newPosition = this.controlsCanvas.clientWidth + this.playButtonWidth - (this.playButtonWidth * 2);
-	newPosition = newPosition * (this.position / this.meme.length);
-	newPosition += this.playButtonWidth;
-	newPosition = Math.min(newPosition, this.controlsCanvas.width - this.playButtonWidth);
-	if (newPosition >= this.playButtonWidth){
-		this.controlsContext.shadowBlur = 10;
-		this.controlsContext.fillStyle = "red";
-
-		this.controlsContext.beginPath();
-		this.controlsContext.arc(newPosition + this.controlsCanvas.height /  2, this.controlsCanvas.height /  2, this.controlsCanvas.height / 2 - 4, 0, Math.PI * 2)
-		this.controlsContext.fill();
-	}
-
-	this.controlsContext.textAlign = "right"
-	this.controlsContext.fillStyle = "white";
-	this.controlsContext.fillText(Math.round(this.meme.length / 100) / 10 + " sec", this.controlsCanvas.width - 18, this.controlsCanvas.height / 2 + 4)
 }
 
 OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
