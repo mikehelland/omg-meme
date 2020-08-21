@@ -13,7 +13,7 @@ function MemeCreator(params) {
 	this.playhead = document.getElementById("playhead")
 	this.layersDiv = document.getElementById("layer-list")
 
-	this.player = new OMemePlayer({div: params.playerDiv, controlsDiv: this.playSeekControls});
+	this.player = new OMemePlayer({div: params.playerDiv, controlsDiv: this.playSeekControls, externalControls: true});
 	this.player.onupdateposition = (position) => this.updatePlayhead(position)
 	this.player.onlayerloaded = (layer, extras) => this.onLayerLoaded(layer, extras)
 	this.loadParameters();
@@ -1385,7 +1385,7 @@ MemeCreator.prototype.drawSoundtrackCanvas = function (layer, action) {
 		return
 	}
 
-	this.musicDrawer.drawCanvas(layer.thing, action.canvas, action.data.totalSubbeats)
+	this.musicDrawer.drawCanvas(layer.thing, action.canvas, action.data.totalSubbeats, action.data.sections)
 }
 
 MemeCreator.prototype.onLayerLoaded = function (layer, extras) {
@@ -1436,13 +1436,21 @@ MemeCreator.prototype.setupSoundtrackRecording = function (clip) {
 			let i = extras.musicPlayer.onBeatPlayedListeners.indexOf(remixerBeatPlayedListener)
 			if (i > -1) {
 				extras.musicPlayer.onBeatPlayedListeners.splice(i, 1)
+				extras.song.data.sections = clip.data.sections
 			}
 			return
 		}
 
+		if (subbeat === 0) {
+			if (!clip.data.sections) {
+				clip.data.sections = []
+			}
+			clip.data.sections.push(JSON.parse(JSON.stringify(this.remixer.currentSection.data)))
+		}
+		
 		clip.data.totalSubbeats++
 	
-		this.musicDrawer.drawCanvas(this.preview.thing, clip.canvas, clip.data.totalSubbeats)
+		this.musicDrawer.drawCanvas(this.preview.thing, clip.canvas, clip.data.totalSubbeats, clip.data.sections)
 	}
 
 	//this.musicDrawer.drawCanvas(this.preview.thing, clip.canvas, clip.data.totalSubbeats)

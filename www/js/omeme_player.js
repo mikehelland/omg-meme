@@ -54,7 +54,10 @@ function OMemePlayer(config) {
 	sceneCanvas.style.display = "block";
 	controlsCanvas.style.display = "block";
 	
-	controlsCanvas.style.marginTop = "3px";
+	if (!config.externalControls) {
+		controlsCanvas.style.position = "absolute"
+		controlsCanvas.style.bottom = "0px";
+	}
 	controlsCanvas.style.height = "40px";	
 	controlsCanvas.height = 40;
 	controlsCanvas.style.backgroundColor = "#303030";
