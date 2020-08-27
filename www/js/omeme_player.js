@@ -7,6 +7,8 @@ function OMemePlayer(config) {
 		return
 	}
 
+	this.config = config
+
 	this.paused = true
 	this.position = 0
 
@@ -45,10 +47,7 @@ function OMemePlayer(config) {
 	controlsCanvas.width = controlsCanvas.clientWidth;
 	
 	sceneCanvas.style.borderWidth = "1px";
-	controlsCanvas.style.borderWidth = "1px";
 	sceneCanvas.style.borderColor = "black";
-	controlsCanvas.style.borderColor = "black";
-	controlsCanvas.style.borderStyle = "solid";
 	sceneCanvas.style.borderStyle = "solid";
 	
 	sceneCanvas.style.display = "block";
@@ -57,10 +56,15 @@ function OMemePlayer(config) {
 	if (!config.externalControls) {
 		controlsCanvas.style.position = "absolute"
 		controlsCanvas.style.bottom = "0px";
+		controlsCanvas.style.boxSizing = "border-box"
+		console.log(sceneCanvas.width)
+		controlsCanvas.style.width = sceneCanvas.width 
+		controlsCanvas.width = controlsCanvas.clientWidth;
+	
 	}
 	controlsCanvas.style.height = "40px";	
 	controlsCanvas.height = 40;
-	controlsCanvas.style.backgroundColor = "#303030";
+	//controlsCanvas.style.backgroundColor = "#303030";
 
 	this.controlsContext = controlsCanvas.getContext("2d");		
 	this.context = sceneCanvas.getContext("2d");
@@ -491,7 +495,7 @@ OMemePlayer.prototype.drawControls = function() {
 		this.controlsContext.fillStyle = "red";
 
 		this.controlsContext.beginPath();
-		this.controlsContext.arc(newPosition, this.controlsCanvas.height /  2, this.controlsCanvas.height / 2 - 4, 0, Math.PI * 2)
+		this.controlsContext.arc(newPosition, this.controlsCanvas.height /  2, this.controlsCanvas.height / 4, 0, Math.PI * 2)
 		this.controlsContext.fill();
 	}
 
@@ -874,6 +878,11 @@ OMemePlayer.prototype.sizeCanvas = function () {
 		this.canvas.style.paddingTop = "0px"
 		this.canvas.style.paddingBottom = "0px"
 
+		if (!this.config.externalControls) {
+			this.controlsCanvas.style.paddingLeft = padding + "px"
+			this.controlsCanvas.style.paddingRight = padding + "px"
+		}
+		
 		this.verticalPadding = 0
 		this.horizontalPadding = padding * 2
 	}

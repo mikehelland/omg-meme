@@ -1072,7 +1072,7 @@ MemeCreator.prototype.updatePlayhead = function (position) {
 		this.lastMemeLength = this.meme.length
 	}
 
-	this.playhead.style.left = 72 + 
+	this.playhead.style.left = 70 + 
 		(this.player.controlsCanvas.clientWidth - this.player.playButtonWidth) * 
 		Math.max(0, Math.min(1, position / this.meme.length)) + 
 		"px"

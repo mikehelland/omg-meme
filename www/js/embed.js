@@ -12,9 +12,16 @@ function OMGEmbeddedViewerMEME(viewer) {
     this.textDiv = document.createElement("div")
     this.viewer = viewer
 
-    viewer.embedDiv.style.paddingLeft = "8px"
-    viewer.embedDiv.style.paddingRight = "8px"
-    
+    this.playerHolder = document.createElement("div")
+
+    this.playerHolder.style.marginLeft = "8px"
+    this.playerHolder.style.marginRight = "8px"
+    this.playerHolder.style.boxSizing = "border-box"
+    this.playerHolder.style.position = "relative"
+    this.playerHolder.style.height = "100%"
+
+    viewer.embedDiv.appendChild(this.playerHolder)
+
     if (viewer.params.maxHeight) {
         viewer.embedDiv.style.height = viewer.params.maxHeight + "px"
     }
@@ -23,18 +30,13 @@ function OMGEmbeddedViewerMEME(viewer) {
     
     for (var i = 0; i < data.layers.length; i++) {
         if (data.layers[i].type === "SOUNDTRACK") {
-            scripts.push("/apps/music/js/omgclasses.js")
             scripts.push("/apps/music/js/omusic_player.js")
-            scripts.push("/apps/music/js/omgservice_music.js")
-            scripts.push("/apps/music/js/fx.js")
-            scripts.push("/apps/music/js/libs/tuna-min.js")
-            scripts.push("/apps/music/js/libs/viktor/viktor.js")
             break
         }
     }
 
     omg.util.loadScripts(scripts, () => {
-        var mp = new OMemePlayer({div: viewer.embedDiv});
+        var mp = new OMemePlayer({div: this.playerHolder});
         mp.loadPreview(data)
 
         viewer.player = mp
