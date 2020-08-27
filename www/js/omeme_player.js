@@ -77,6 +77,8 @@ function OMemePlayer(config) {
 OMemePlayer.prototype.load = function(meme) {
 
 	this.meme = meme
+	
+	this.musicPlayersToLoad = 0
 
 	if (!meme.layers) {
 		meme.layers = []	
@@ -104,8 +106,21 @@ OMemePlayer.prototype.load = function(meme) {
 	if (typeof meme.length !== "number") {
 		meme.length = 10
 	}
+
+	this.loaded = true
 	
-	this.animate();	
+	this.animate();
+	
+	if (this.musicPlayersToLoad === 0 && this.onload) {
+		this.onload()
+	}
+}
+
+OMemePlayer.prototype.loadPreview = function (meme) {
+	this.meme = meme
+	this.loadBackground(() => {
+		this.drawBackground()	
+	})
 }
 
 OMemePlayer.prototype.newCharacter = function (thing, callback, errorCallback) {
@@ -662,13 +677,14 @@ OMemePlayer.prototype.playButton = function() {
 	}
 }
 
-OMemePlayer.prototype.loadBackground = function(){
+OMemePlayer.prototype.loadBackground = function(onload) {
 
 	if (!this.meme) return
 	
 	var background = this.meme.background
 	if (background && background.thing && background.thing.url) {
 		this.backgroundImg = new Image()
+		this.backgroundImg.onload = onload
 		this.backgroundImg.src = background.thing.url
 	}
 }
@@ -779,14 +795,25 @@ OMemePlayer.prototype.loadAudio = function (soundtrack, nowInLoop) {
 	var blankPart = {soundSet: {name: soundtrack.thing.name, data:[soundtrack.thing], defaultSurface: "PRESET_SEQUENCER"}};
 	//var names = tg.currentSection.parts.map(section => section.data.name);
 	//blankPart.name = omg.util.getUniqueName(soundSet.name, names);
+	
+	this.musicPlayersToLoad++
+	let runOnload = false
+
 	var part = new OMGPart(undefined,blankPart, this.musicSection);
 	this.musicPlayer.loadPart(part, undefined, () => {
+		
 		sound = this.musicPlayer.getSound(part, soundtrack.thing.name)	
 		extras.audio = sound.getBuffer()	
 		extras.play = () => sound.play()
 		extras.stop = () => sound.stop()
 		this.onLayerLoaded(soundtrack, extras)
+
+		this.musicPlayersToLoad--
+		if (runOnload && this.musicPlayersToLoad === 0 && this.onload) {
+			this.onload()	
+		}
 	})
+	runOnload = true
 
 	this.layerExtras.set(soundtrack, extras)
 	return extras
@@ -799,14 +826,22 @@ OMemePlayer.prototype.loadSoundtrack = function (soundtrack, player) {
 		extras.musicPlayer = player
 	}
 	else {
+		this.musicPlayersToLoad++
 		try {
+			let runOnload = false
 			extras.song = OMGSong.prototype.make(soundtrack.thing)
 			extras.musicPlayer = new OMusicPlayer()
-			extras.musicPlayer.prepareSong(extras.song)	
+			extras.musicPlayer.prepareSong(extras.song, () => {
+				this.musicPlayersToLoad--
+				if (this.musicPlayersToLoad === 0) {
+					if (runOnload && this.onload) this.onload()
+				}
+			})	
+			runOnload = true
 		}
 		catch (e) {console.error(e)}
 	}
-
+	console.log(extras.musicPlayer.song)
 	extras.play = () => extras.musicPlayer.play()
 	extras.stop = () => extras.musicPlayer.stop()
 	this.layerExtras.set(soundtrack, extras)

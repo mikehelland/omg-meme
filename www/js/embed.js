@@ -10,6 +10,7 @@ function OMGEmbeddedViewerMEME(viewer) {
     this.div = document.createElement("div")
     this.div.className = "omg-thing-p"
     this.textDiv = document.createElement("div")
+    this.viewer = viewer
 
     viewer.embedDiv.style.paddingLeft = "8px"
     viewer.embedDiv.style.paddingRight = "8px"
@@ -34,10 +35,60 @@ function OMGEmbeddedViewerMEME(viewer) {
 
     omg.util.loadScripts(scripts, () => {
         var mp = new OMemePlayer({div: viewer.embedDiv});
-        mp.load(data)
+        mp.loadPreview(data)
 
-        viewer.memePlayer = mp
-        
+        viewer.player = mp
+        this.player = mp
+
+        this.canvas = mp.canvas
+        this.makePlayButton()
     })
 
 }
+
+OMGEmbeddedViewerMEME.prototype.makePlayButton = function () {
+
+    this.playButton = document.createElement("div")
+    this.playButton.className = "omg-viewer-play-button"
+
+    var img = document.createElement("img")
+    img.src = "/apps/music/img/play-button.svg"
+    img.style.height = this.canvas.clientHeight / 2 + "px"
+    img.style.marginLeft = this.canvas.clientWidth / 2 - this.canvas.clientHeight / 4 + "px"
+    img.style.marginTop = this.canvas.clientHeight / 4 + "px"
+    img.style.cursor = "pointer"
+    this.playButtonImg = img
+    this.playButton.appendChild(img)
+
+    this.playButton.style.opacity = "0.7"
+    img.onmouseenter = e => this.playButton.style.opacity = "1"
+    img.onmouseleave = e => this.playButton.style.opacity = "0.7"
+    
+    this.viewer.embedDiv.appendChild(this.playButton)
+
+    this.playButtonImg.onclick = e => this.playButtonClick()
+}
+
+OMGEmbeddedViewerMEME.prototype.playButtonClick = function (data) {
+
+    if (!this.player.loaded) {
+        this.player.onload = () => {
+            this.viewer.embedDiv.removeChild(this.playButton)
+            this.playButtonImg.classList.remove("loader")
+            this.player.play()    
+        }
+        this.playButtonImg.classList.add("loader")
+        this.player.load(this.viewer.data)
+        return
+    }
+
+    if (this.player.paused) {
+        this.player.play()
+        this.playButtonImg.src = ""
+    }
+    else {
+        this.player.stop()
+        this.playButtonImg.src = "/apps/music/img/play-button.svg"
+    }
+}
+

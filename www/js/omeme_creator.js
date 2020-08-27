@@ -1437,6 +1437,7 @@ MemeCreator.prototype.setupSoundtrackRecording = function (clip) {
 			if (i > -1) {
 				extras.musicPlayer.onBeatPlayedListeners.splice(i, 1)
 				extras.song.data.sections = clip.data.sections
+				//this.preview.thing = extras.song.getData()
 			}
 			return
 		}
