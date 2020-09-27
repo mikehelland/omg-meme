@@ -40,10 +40,11 @@ function OMemePlayer(config) {
 	sceneCanvas.style.height = "100%"
 	sceneCanvas.width = this.width;
 	sceneCanvas.height = this.height;
-	
-	this.sizeCanvas()
 
 	controlsCanvas.style.width = "100%" 
+
+	this.sizeCanvas()
+
 	controlsCanvas.width = controlsCanvas.clientWidth;
 	
 	sceneCanvas.style.borderWidth = "1px";
@@ -879,8 +880,8 @@ OMemePlayer.prototype.sizeCanvas = function () {
 		this.canvas.style.paddingBottom = "0px"
 
 		if (!this.config.externalControls) {
-			this.controlsCanvas.style.paddingLeft = padding + "px"
-			this.controlsCanvas.style.paddingRight = padding + "px"
+			this.controlsCanvas.style.marginLeft = padding + "px"
+			this.controlsCanvas.style.width = this.canvas.clientWidth - padding * 2 + "px"
 		}
 		
 		this.verticalPadding = 0
