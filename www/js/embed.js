@@ -73,11 +73,19 @@ OMGEmbeddedViewerMEME.prototype.makePlayButton = function () {
 
 OMGEmbeddedViewerMEME.prototype.playButtonClick = function (data) {
 
+    let playcountUpdate = () => {
+        if (!this.playButtonHasBeenClicked) {
+            this.playButtonHasBeenClicked = true;                
+            omg.server.postHTTP("/playcount", {id: this.viewer.data.id});
+        }
+    }
+
     if (!this.player.loaded) {
         this.player.onload = () => {
             this.viewer.embedDiv.removeChild(this.playButton)
             this.playButtonImg.classList.remove("loader")
             this.player.play()    
+            playcountUpdate()
         }
         this.playButtonImg.classList.add("loader")
         this.player.load(this.viewer.data)
@@ -86,6 +94,7 @@ OMGEmbeddedViewerMEME.prototype.playButtonClick = function (data) {
 
     if (this.player.paused) {
         this.player.play()
+        playcountUpdate()
         this.playButtonImg.src = ""
     }
     else {
