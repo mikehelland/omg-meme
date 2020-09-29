@@ -85,10 +85,13 @@ MemeCreator.prototype.showDoodleTab = function (tab) {
 		tab.colorPicker.onchange = e => this.preview.color = e.target.value
 		tab.sizePicker = document.getElementById("doodle-width")
 		tab.sizePicker.onchange = e => this.preview.width = e.target.value
+		tab.animateCheckbox = document.getElementById("doodle-animate")
+		tab.animateCheckbox.onchange = e => this.preview.animate = e.target.checked
 	}
 
 	this.preview = {
 		type: "DOODLE", 
+		animate: tab.animateCheckbox.checked,
 		color: tab.colorPicker.value, 
 		width: tab.sizePicker.value,
 		xyt: [], 
@@ -301,15 +304,20 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 
 MemeCreator.prototype.showDialogTab = function (tab) {
 
-	if (!this.dialogInput) {
+	if (!tab.shown) {
 		this.dialogInput = document.getElementById("dialog-text")
 		this.dialogInput.onkeyup = () => {
 			this.preview.text = this.dialogInput.value;
 		};
+
+		tab.animateCheckbox = document.getElementById("dialog-animate")
+		tab.animateCheckbox.onchange = e => this.preview.animate = e.target.checked
 	}
 
 	this.preview = this.newDialog()
 	this.player.preview = this.preview
+
+	this.preview.animate = tab.animateCheckbox.checked
 
 	this.highlightDiv(this.dialogInput)
 
@@ -607,7 +615,7 @@ function MemeCanvasEventHandler(memeCreator) {
 		}
 		else if (this.memeCreator.mode === "DIALOG") {
 			player.preview.x = -1;
-			player.preview.y = -1;	
+			player.preview.y = -1;
 		}
 		
 	};
@@ -825,7 +833,7 @@ MemeCanvasEventHandler.prototype.dialogStartTouch = function (x, y) {
 	
 	var time = this.player.position;
 	this.player.recordPastPlay = true;
-	if (this.player.paused){
+	if (this.player.paused && this.memeCreator.preview.animate){
 		this.player.resume();
 	}
 	this.loopCounter = Date.now() - time;
@@ -846,14 +854,14 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 	var time = mc.player.position;
 	
 	mc.player.recordPastPlay = true;
-	if (mc.player.paused){
+	if (mc.player.paused && mc.preview.animate){
 		mc.player.resume();
 	}
 	this.loopCounter = Date.now() - time;
 	
 	mc.preview.xyt.push([x, y, time]);	
 
-	this.t = Date.now();
+	this.startPosition = time
 
 	if (mc.meme.layers.indexOf(mc.preview) === -1) {
 		mc.meme.layers.push(mc.preview)
@@ -861,11 +869,11 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 	}
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
-	this.memeCreator.preview.xyt.push([x, y, Date.now() - this.loopCounter]);
+	this.memeCreator.preview.xyt.push([x, y, this.memeCreator.preview.animate ? Date.now() - this.loopCounter : this.startPosition]);
 };
 MemeCanvasEventHandler.prototype.doodleTouchEnd = function (x, y) {
 
-	this.memeCreator.preview.xyt.push([-1, -1, Date.now() - this.loopCounter]);
+	this.memeCreator.preview.xyt.push([-1, -1, this.memeCreator.preview.animate ? Date.now() - this.loopCounter : this.startPosition]);
 
 	this.memeCreator.preview.refreshLayer()
 	this.memeCreator.player.recordPastPlay = false;

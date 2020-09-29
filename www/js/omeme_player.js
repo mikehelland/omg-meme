@@ -109,7 +109,7 @@ OMemePlayer.prototype.load = function(meme) {
 	this.loadBackground()
 
 	if (typeof meme.length !== "number") {
-		meme.length = 10
+		meme.length = 0
 	}
 
 	this.loaded = true
@@ -126,6 +126,23 @@ OMemePlayer.prototype.loadPreview = function (meme) {
 	this.loadBackground(() => {
 		this.drawBackground()	
 	})
+
+	this.meme.layers.forEach(layer => {
+		switch(layer.type) {
+			case "CHARACTER":
+				//this.animateCharacter(layer, 0)
+				break;
+			case "DIALOG":
+				layer.i = 0
+				this.animateDialog(layer, 0)
+				break;
+			case "DOODLE":
+				layer.i = 0
+				this.animateDoodle(layer, 0)
+				break;
+			}
+	})
+	
 }
 
 OMemePlayer.prototype.newCharacter = function (thing, callback, errorCallback) {
@@ -289,9 +306,9 @@ OMemePlayer.prototype.animate = function() {
 	}
 	else {
 		this.nowInLoop = Date.now() - this.started;
-		this.position = this.nowInLoop;
+		this.position = this.recordPastPlay ? this.nowInLoop : Math.min(this.meme.length, this.nowInLoop)
 
-		if (this.onupdateposition) this.onupdateposition(this.nowInLoop)
+		if (this.onupdateposition) this.onupdateposition(this.position)
 	}
 
 	if (this.loading){
@@ -358,11 +375,6 @@ OMemePlayer.prototype.animate = function() {
 	}
 
 	this.drawControls();
-
-	if (false && oMemePlayer.player) {
-		//todo 2020
-		updateAudioChannels(nowInLoop);
-	}
 	
 	requestAnimationFrame(() => {
 		this.animate();
@@ -416,7 +428,7 @@ OMemePlayer.prototype.animateDialog = function (dialog, nowInLoop) {
 	if (!dialog.xyt[dialog.i] || dialog.xyt[dialog.i][0] === -1) {
 		this._shouldDrawDialog = false
 	}
-	else if (dialog.xyt[dialog.i][2] > nowInLoop) {
+	else if (dialog.i === 0 && dialog.xyt[dialog.i][2] > nowInLoop) {
 		this._shouldDrawDialog = false
 	}
 	else if (dialog.xyt[dialog.i + 1] && dialog.xyt[dialog.i + 1][2] <= nowInLoop) {
@@ -691,6 +703,9 @@ OMemePlayer.prototype.loadBackground = function(onload) {
 		this.backgroundImg = new Image()
 		this.backgroundImg.onload = onload
 		this.backgroundImg.src = background.thing.url
+	}
+	else {
+		this.drawBackground()
 	}
 }
 
