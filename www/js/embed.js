@@ -43,7 +43,10 @@ function OMGEmbeddedViewerMEME(viewer) {
         this.player = mp
 
         this.canvas = mp.canvas
-        this.makePlayButton()
+
+        if (data.length) {
+            this.makePlayButton()
+        }
     })
 
 }

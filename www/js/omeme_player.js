@@ -124,25 +124,24 @@ OMemePlayer.prototype.load = function(meme) {
 OMemePlayer.prototype.loadPreview = function (meme) {
 	this.meme = meme
 	this.loadBackground(() => {
-		this.drawBackground()	
-	})
+		this.drawBackground()
 
-	this.meme.layers.forEach(layer => {
-		switch(layer.type) {
-			case "CHARACTER":
-				//this.animateCharacter(layer, 0)
-				break;
-			case "DIALOG":
-				layer.i = 0
-				this.animateDialog(layer, 0)
-				break;
-			case "DOODLE":
-				layer.i = 0
-				this.animateDoodle(layer, 0)
-				break;
-			}
+		this.meme.layers.forEach(layer => {
+			switch(layer.type) {
+				case "CHARACTER":
+					//this.animateCharacter(layer, 0)
+					break;
+				case "DIALOG":
+					layer.i = 0
+					this.animateDialog(layer, 0)
+					break;
+				case "DOODLE":
+					layer.i = 0
+					this.animateDoodle(layer, 0)
+					break;
+				}
+		})
 	})
-	
 }
 
 OMemePlayer.prototype.newCharacter = function (thing, callback, errorCallback) {
@@ -705,7 +704,7 @@ OMemePlayer.prototype.loadBackground = function(onload) {
 		this.backgroundImg.src = background.thing.url
 	}
 	else {
-		this.drawBackground()
+		if (onload) onload()
 	}
 }
 
