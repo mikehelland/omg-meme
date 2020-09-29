@@ -395,3 +395,21 @@ textarea {
 	width:100%;
 	border: none;
 }
+
+.drop-zone-hover {
+	border: 10px dashed #1db918 !important;
+}
+
+.tab-page-info {
+	padding: 6px;
+}
+
+#background-page-url {
+	display:flex;
+	align-items: center;
+}
+
+#background-page-url-input {
+	flex-grow: 1;
+	margin-left:12px;
+}

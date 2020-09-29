@@ -106,6 +106,12 @@ MemeCreator.prototype.showBackgroundTab = function (tab) {
 	if (tab.shown)
 		return;
 
+	var urlInput = tab.pageDiv.getElementsByClassName("url-input")[0];
+	urlInput.onkeypress = e => {
+		if (e.keyCode === 13) {
+			this.addBackground({type: "IMAGE", url: urlInput.value})
+		}
+	}
 	var userList = tab.pageDiv.getElementsByClassName("row-list")[0];
 
 	var searchBox = this.makeSearchBox(["IMAGE", "IMAGESET"])
@@ -119,6 +125,8 @@ MemeCreator.prototype.showBackgroundTab = function (tab) {
 		}
 
 	});
+
+	this.setupDropBackground()
 };
 
 
@@ -315,7 +323,10 @@ MemeCreator.prototype.showSaveTab = function (tab) {
 	
 	document.getElementById("post-button").onclick = () => {
 
-		if (this.meme.id) {
+		if (this.meme.id && this.meme.draft) {
+			delete this.meme.draft
+		}
+		else if (this.meme.id) {
 			if (!omg.user) {
 				delete this.meme.id
 			}
@@ -1145,6 +1156,9 @@ MemeCreator.prototype.setupPanels = function () {
 			fullscreenWindow.style.cursor = "default"
 		}
 	}
+
+	this.player.sizeCanvas()
+
 }
 
 MemeCreator.prototype.newDialog = function () {
@@ -1454,6 +1468,88 @@ MemeCreator.prototype.setupSoundtrackRecording = function (clip) {
 		this.musicDrawer.drawCanvas(this.preview.thing, clip.canvas, clip.data.totalSubbeats, clip.data.sections)
 	}
 
-	//this.musicDrawer.drawCanvas(this.preview.thing, clip.canvas, clip.data.totalSubbeats)
 	extras.musicPlayer.onBeatPlayedListeners.push(remixerBeatPlayedListener)
+}
+
+
+MemeCreator.prototype.setupDropBackground = function () {
+
+	var dropZone = this.player.canvas
+	dropZone.ondragover = (e) => {
+		e.preventDefault()
+		dropZone.classList.add("drop-zone-hover")
+	}
+	dropZone.ondragleave = (e) => {
+		e.preventDefault()
+		dropZone.classList.remove("drop-zone-hover")
+	}
+	dropZone.ondrop = async (e) => {
+		e.preventDefault()
+		dropZone.classList.remove("drop-zone-hover")
+
+		var items = e.dataTransfer.items
+
+		//todo make sure there is a user, and there is an id or draft id
+		/*var ok = await omg.ui.loginRequired()
+		if (!ok) {
+			return
+		}*/
+
+		if (items) {
+			if (this.meme.id) {
+				handleDroppedItems(items)
+			}
+			else {
+				this.meme.draft = true
+				omg.server.post(this.meme, res => {
+					this.meme.id = res.id
+					this.meme.user_id = res.user_id
+					handleDroppedItems(items)
+				})
+			}
+		}
+	}
+
+	var handleDroppedItems = (items) => {
+		for (var i = 0; i < items.length; i++) {
+			if (items[i].kind === "file") {
+				handleDroppedItem(items[i])
+			}
+		}
+	}
+
+	var handleDroppedItem = (item) => {
+		if (!item.type.startsWith("image/")) {
+			console.log("user dropped non-image")
+			return
+		}
+
+		var file = item.getAsFile()
+		/*var media = {
+			mimeType: item.type, 
+			url: window.location.origin + "/uploads/" + omg.user.id + "/" + draftPost.id + "/" + file.name, 
+			name: makeMediaName(file.name)
+		}
+		draftPost.attachments.push(media)*/
+		
+		//todo show status of upload
+		//var statusDiv = makeAttachmentEl(media)
+		//statusDiv.innerHTML = "Uploading..."
+		
+		var fd = new FormData();
+		fd.append('setId', this.meme.id);
+		fd.append('file', file);
+		fd.append('filename', file.name);
+		
+		omg.server.postHTTP("/upload", fd, (res)=>{
+			
+			//todo statusDiv.innerHTML = res.success ? 
+			//	"<font color='green'>Uploaded</font>" : ("<font color='red'>Error</font> " + res.error)
+
+			if (res && res.success) {
+				this.addBackground({type: "IMAGE", url: window.location.origin + res.filename})
+			}
+		});
+	}
+
 }
