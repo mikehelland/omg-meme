@@ -1523,6 +1523,9 @@ MemeCreator.prototype.setupDropBackground = function () {
 			if (items[i].kind === "file") {
 				handleDroppedItem(items[i])
 			}
+			else if (items[i].type === "text/uri-list") {
+				items[i].getAsString(s => handleDroppedURI(s))
+			}
 		}
 	}
 
@@ -1533,15 +1536,7 @@ MemeCreator.prototype.setupDropBackground = function () {
 		}
 
 		var file = item.getAsFile()
-		/*var media = {
-			mimeType: item.type, 
-			url: window.location.origin + "/uploads/" + omg.user.id + "/" + draftPost.id + "/" + file.name, 
-			name: makeMediaName(file.name)
-		}
-		draftPost.attachments.push(media)*/
-		
-		//todo show status of upload
-		//var statusDiv = makeAttachmentEl(media)
+
 		//statusDiv.innerHTML = "Uploading..."
 		
 		var fd = new FormData();
@@ -1560,4 +1555,17 @@ MemeCreator.prototype.setupDropBackground = function () {
 		});
 	}
 
+	var handleDroppedURI = (uri) => {
+
+		this.addBackground({type: "IMAGE", url: uri})
+
+		//todo, what if this is a sound? or script?
+		/*omg.server.getHTTP("/util/mime-type?uri=" + encodeURIComponent(uri), res => {
+			var media = {
+				mimeType: res.mimeType, 
+				url: uri, 
+				name: makeMediaName(uri)
+			}
+		})*/    
+	}
 }
