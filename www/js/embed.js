@@ -28,8 +28,10 @@ function OMGEmbeddedViewerMEME(viewer) {
 
     let scripts = ["/apps/meme/js/omeme_player.js"]
     
+    let autoPlay = viewer.params.autoPlay
     for (var i = 0; i < data.layers.length; i++) {
         if (data.layers[i].type === "SOUNDTRACK") {
+            autoPlay = false
             scripts.push("/apps/music/js/omusic_player.js")
             break
         }
@@ -44,7 +46,14 @@ function OMGEmbeddedViewerMEME(viewer) {
 
         this.canvas = mp.canvas
 
-        if (data.length) {
+        if (autoPlay) {
+            this.player.onload = () => {
+                this.player.play()    
+                this.playcountUpdate()
+            }
+            this.player.load(this.viewer.data)
+        }
+        if (data.length && !autoPlay) {
             this.makePlayButton()
         }
     })
@@ -76,19 +85,12 @@ OMGEmbeddedViewerMEME.prototype.makePlayButton = function () {
 
 OMGEmbeddedViewerMEME.prototype.playButtonClick = function (data) {
 
-    let playcountUpdate = () => {
-        if (!this.playButtonHasBeenClicked) {
-            this.playButtonHasBeenClicked = true;                
-            omg.server.postHTTP("/playcount", {id: this.viewer.data.id});
-        }
-    }
-
     if (!this.player.loaded) {
         this.player.onload = () => {
             this.viewer.embedDiv.removeChild(this.playButton)
             this.playButtonImg.classList.remove("loader")
             this.player.play()    
-            playcountUpdate()
+            this.playcountUpdate()
         }
         this.playButtonImg.classList.add("loader")
         this.player.load(this.viewer.data)
@@ -97,12 +99,19 @@ OMGEmbeddedViewerMEME.prototype.playButtonClick = function (data) {
 
     if (this.player.paused) {
         this.player.play()
-        playcountUpdate()
+        this.playcountUpdate()
         this.playButtonImg.src = ""
     }
     else {
         this.player.stop()
         this.playButtonImg.src = "/apps/music/img/play-button.svg"
+    }
+}
+
+OMGEmbeddedViewerMEME.prototype.playcountUpdate = function () {
+    if (!this.playButtonHasBeenClicked) {
+        this.playButtonHasBeenClicked = true;                
+        omg.server.postHTTP("/playcount", {id: this.viewer.data.id});
     }
 }
 
