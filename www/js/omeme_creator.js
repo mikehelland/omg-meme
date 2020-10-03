@@ -60,22 +60,22 @@ MemeCreator.prototype.showTab = function (mode, params) {
 	let tab = this.tabs[mode]
 
 	if (mode == "BACKGROUND") {
-		this.showBackgroundTab(tab);
+		this.showBackgroundTab(tab, params);
 	}
 	if (mode == "DOODLE") {
 		this.showDoodleTab(tab, params);
 	}
 	if (mode == "CHARACTER") {
-		this.showCharactersTab(tab);
+		this.showCharactersTab(tab, params);
 	}
 	if (mode == "SOUNDTRACK") {
-		this.showSoundsTab(tab);
+		this.showSoundsTab(tab, params);
 	}
 	if (mode == "DIALOG") {
-		this.showDialogTab(tab);
+		this.showDialogTab(tab, params);
 	}
 	if (mode == "SUBMIT") {
-		this.showSaveTab(tab)
+		this.showSaveTab(tab, params)
 	}
 
 	tab.div.className = "selected-main-tab";
@@ -311,7 +311,7 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 	searchBox.search()	
 };
 
-MemeCreator.prototype.showDialogTab = function (tab) {
+MemeCreator.prototype.showDialogTab = function (tab, editting) {
 
 	if (!tab.shown) {
 		this.dialogInput = document.getElementById("dialog-text")
@@ -323,15 +323,16 @@ MemeCreator.prototype.showDialogTab = function (tab) {
 		tab.animateCheckbox.onchange = e => this.preview.animate = e.target.checked
 	}
 
-	this.preview = this.newDialog()
-	this.player.preview = this.preview
+	if (!editting) {
+		this.preview = this.newDialog()
+		this.player.preview = this.preview
 
-	this.preview.animate = tab.animateCheckbox.checked
+		this.preview.animate = tab.animateCheckbox.checked
 
-	this.highlightDiv(this.dialogInput)
+		this.highlightDiv(this.dialogInput)
 
-	this.preview.text = this.dialogInput.value || "enter text"
-
+		this.preview.text = this.dialogInput.value || "enter text"
+	}
 };
 
 MemeCreator.prototype.showSaveTab = function (tab) {
@@ -622,7 +623,7 @@ function MemeCanvasEventHandler(memeCreator) {
 			player.preview.y = -1;
 			player.preview.drawSelection = false;
 		}
-		else if (this.memeCreator.mode === "DIALOG") {
+		else if (this.memeCreator.mode === "DIALOG" || this.memeCreator.mode === "DOODLE") {
 			player.preview.x = -1;
 			player.preview.y = -1;
 		}
@@ -1592,6 +1593,13 @@ MemeCreator.prototype.onLayerSelected = function (layer) {
 		tab.animateCheckbox.checked = layer.animate
 		tab.colorPicker.value = layer.color
 		tab.sizePicker.value = layer.width
+	}
+	else if (layer.type === "DIALOG") {
+		this.showTab("DIALOG", true)
+		
+		let tab = this.tabs["DIALOG"]
+		tab.animateCheckbox.checked = layer.animate
+		this.dialogInput.value = layer.text
 	}
 
 }
