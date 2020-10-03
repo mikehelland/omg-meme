@@ -27,58 +27,64 @@ function MemeCreator(params) {
 
 MemeCreator.prototype.setupTabs = function () {
 	var mc = this;
-	var tabs = [
-	            {mode: "BACKGROUND"},
-			    {mode: "CHARACTER"},
-			    {mode: "DIALOG"},
-			    {mode: "SOUNDTRACK"},
-			    {mode: "DOODLE"},
-				{mode: "SUBMIT"},
-			];
+	var tabs = {
+		"BACKGROUND": {},
+		"CHARACTER": {},
+		"DIALOG": {},
+		"SOUNDTRACK": {},
+		"DOODLE": {},
+		"SUBMIT": {}
+	}
 	
-	tabs.forEach((tab, i) => {
-		tab.div = document.getElementById(tab.mode.toLowerCase() + "-tab");
-		tab.pageDiv = document.getElementById(tab.mode.toLowerCase() + "-page");
+	Object.keys(tabs).forEach(tabName => {
+		let tab = tabs[tabName]
+		tab.div = document.getElementById(tabName.toLowerCase() + "-tab");
+		tab.pageDiv = document.getElementById(tabName.toLowerCase() + "-page");
 		tab.div.onclick = () => {
-			tabs.forEach((tab2) => {
-				tab2.div.className = "main-tab";
-				tab2.pageDiv.style.display = "none";
-			});
 			
-			mc.showTab(tab);
-			this.mode = tab.mode;
+			mc.showTab(tabName);
+			this.mode = tabName;
 			
-			tab.div.className = "selected-main-tab";
-			tab.pageDiv.style.display = "block";
 		};
 	});
 
 	this.tabs = tabs	
 };
 
-MemeCreator.prototype.showTab = function (tab) {
-	if (tab.mode == "BACKGROUND") {
+MemeCreator.prototype.showTab = function (mode, params) {
+	Object.values(this.tabs).forEach((tab2) => {
+		tab2.div.className = "main-tab";
+		tab2.pageDiv.style.display = "none";
+	});
+
+	let tab = this.tabs[mode]
+
+	if (mode == "BACKGROUND") {
 		this.showBackgroundTab(tab);
 	}
-	if (tab.mode == "DOODLE") {
-		this.showDoodleTab(tab);
+	if (mode == "DOODLE") {
+		this.showDoodleTab(tab, params);
 	}
-	if (tab.mode == "CHARACTER") {
+	if (mode == "CHARACTER") {
 		this.showCharactersTab(tab);
 	}
-	if (tab.mode == "SOUNDTRACK") {
+	if (mode == "SOUNDTRACK") {
 		this.showSoundsTab(tab);
 	}
-	if (tab.mode == "DIALOG") {
+	if (mode == "DIALOG") {
 		this.showDialogTab(tab);
 	}
-	if (tab.mode == "SUBMIT") {
+	if (mode == "SUBMIT") {
 		this.showSaveTab(tab)
 	}
+
+	tab.div.className = "selected-main-tab";
+	tab.pageDiv.style.display = "block";
+
 	tab.shown = true;
 };
 
-MemeCreator.prototype.showDoodleTab = function (tab) {
+MemeCreator.prototype.showDoodleTab = function (tab, editting) {
 
 	if (!tab.shown) {
 		tab.colorPicker = document.getElementById("doodle-color")
@@ -89,17 +95,20 @@ MemeCreator.prototype.showDoodleTab = function (tab) {
 		tab.animateCheckbox.onchange = e => this.preview.animate = e.target.checked
 	}
 
-	this.preview = {
-		type: "DOODLE", 
-		animate: tab.animateCheckbox.checked,
-		color: tab.colorPicker.value, 
-		width: tab.sizePicker.value,
-		xyt: [], 
-		i: 0
-	};
+	if (!editting) {
+		this.preview = {
+			type: "DOODLE", 
+			animate: tab.animateCheckbox.checked,
+			color: tab.colorPicker.value, 
+			width: tab.sizePicker.value,
+			xyt: [], 
+			i: 0
+		};
 
-	this.player.preview = this.preview
-	
+		this.player.preview = this.preview
+		
+		this.highlightDiv(tab.sizePicker)
+	}
 };
 
 MemeCreator.prototype.showBackgroundTab = function (tab) {
@@ -498,7 +507,7 @@ MemeCreator.prototype.loadId = function (id) {
 
 MemeCreator.prototype.onLoad = function () {
 	this.meme = this.player.meme
-	this.tabs[0].div.onclick()
+	this.tabs["BACKGROUND"].div.onclick()
 	this.setupCanvasEvents()
 	this.setupLayers()
 }
@@ -865,7 +874,8 @@ MemeCanvasEventHandler.prototype.doodleStartTouch = function (x, y, tool) {
 
 	if (mc.meme.layers.indexOf(mc.preview) === -1) {
 		mc.meme.layers.push(mc.preview)
-		mc.makeDoodleLayer(mc.preview)
+		let layer = mc.makeDoodleLayer(mc.preview)
+		mc.highlightDiv(layer.div)
 	}
 };
 MemeCanvasEventHandler.prototype.doodleTouchMove = function (x, y, tool){
@@ -1031,6 +1041,8 @@ MemeCreator.prototype.makeLayerDiv = function (layer) {
 		this.mode = layer.type
 
 		this.highlightDiv(div)
+
+		this.onLayerSelected(layer)
 	}
 
 	header.oncontextmenu = e => {
@@ -1123,6 +1135,7 @@ MemeCreator.prototype.makeDoodleLayer = function (doodle) {
 
 	doodle.refreshLayer = () => this.drawActions(doodle.xyt, detailCanvas)
 	doodle.refreshLayer()
+	return layer
 }
 
 MemeCreator.prototype.setupPanels = function () {
@@ -1568,4 +1581,17 @@ MemeCreator.prototype.setupDropBackground = function () {
 			}
 		})*/    
 	}
+}
+
+MemeCreator.prototype.onLayerSelected = function (layer) {
+
+	if (layer.type === "DOODLE") {
+		this.showTab("DOODLE", true)
+		
+		let tab = this.tabs["DOODLE"]
+		tab.animateCheckbox.checked = layer.animate
+		tab.colorPicker.value = layer.color
+		tab.sizePicker.value = layer.width
+	}
+
 }
