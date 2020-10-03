@@ -40,22 +40,23 @@ function OMGEmbeddedViewerMEME(viewer) {
     omg.util.loadScripts(scripts, () => {
         var mp = new OMemePlayer({div: this.playerHolder});
         mp.loadPreview(data)
-
+        
         viewer.player = mp
         this.player = mp
 
         this.canvas = mp.canvas
 
-        if (autoPlay) {
+        if (data.length && !autoPlay) {
+            this.makePlayButton()
+        }
+        if (data.length && autoPlay) {
             this.player.onload = () => {
                 this.player.play()    
                 this.playcountUpdate()
             }
             this.player.load(this.viewer.data)
         }
-        if (data.length && !autoPlay) {
-            this.makePlayButton()
-        }
+        
     })
 
 }
