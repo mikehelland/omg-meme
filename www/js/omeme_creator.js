@@ -352,20 +352,21 @@ MemeCreator.prototype.showDialogTab = function (tab, editting) {
 MemeCreator.prototype.showSaveTab = function (tab) {
 	this.preview = undefined
 	this.player.preview = undefined
-	
-	document.getElementById("post-button").onclick = () => {
 
-		if (this.meme.id && this.meme.draft) {
-			delete this.meme.draft
+	if (this.meme.id && omg.user && omg.user.id === this.meme.user_id && !this.meme.draft) {
+		document.getElementById("save-option-panel").style.display = "block"
+		document.getElementById("fresh-save-panel").style.display = "none"
+	}
+	else {
+		if (!this.meme.draft) {
+			delete this.meme.id
 		}
-		else if (this.meme.id) {
-			if (!omg.user) {
-				delete this.meme.id
-			}
-			else if (omg.user.id !== this.meme.user_id) {
-				delete this.meme.id
-			}
-		}
+		document.getElementById("save-option-panel").style.display = "none"
+		document.getElementById("fresh-save-panel").style.display = "block"
+	}
+
+	let post = () => {
+		delete this.meme.draft
 
 		this.meme.name = document.getElementById("main-name-input").value || ""
 		this.meme.tags = document.getElementById("main-tags-input").value || ""
@@ -376,7 +377,20 @@ MemeCreator.prototype.showSaveTab = function (tab) {
 			}
 		});
 	}
-	
+
+	document.getElementById("post-button").onclick = () => {
+		post()
+	}
+
+	document.getElementById("post-button-overwrite").onclick = () => {
+		post()
+	}
+
+	document.getElementById("post-button-new-copy").onclick = () => {
+		delete this.meme.id
+		post()
+	}
+
 }
 
 MemeCreator.prototype.showDialog = function (params) {

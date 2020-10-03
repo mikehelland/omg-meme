@@ -7,9 +7,6 @@ if (typeof omg === "object" && omg.types) {
 function OMGEmbeddedViewerMEME(viewer) {
     var data = viewer.data
     this.viewMode = viewer.params.viewMode || "full"
-    this.div = document.createElement("div")
-    this.div.className = "omg-thing-p"
-    this.textDiv = document.createElement("div")
     this.viewer = viewer
 
     this.playerHolder = document.createElement("div")
