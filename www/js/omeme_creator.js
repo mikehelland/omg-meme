@@ -121,7 +121,7 @@ MemeCreator.prototype.showBackgroundTab = function (tab) {
 	var urlInput = tab.pageDiv.getElementsByClassName("url-input")[0];
 	urlInput.onkeypress = e => {
 		if (e.keyCode === 13) {
-			this.addBackground({type: "IMAGE", url: urlInput.value})
+			this.addBackground({type: "IMAGE", url: urlInput.value}, true)
 		}
 	}
 	var userList = tab.pageDiv.getElementsByClassName("row-list")[0];
@@ -150,7 +150,7 @@ MemeCreator.prototype.loadBackgroundRow = function (detail) {
 	newRow.src = detail.url //detail.thumbnail;
 	
 	newRow.onclick = () => {
-		this.addBackground(detail);
+		this.addBackground(detail, true);
 	};	
 	
 	return newRow;
@@ -174,15 +174,29 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 	return newRow;
 };
 
-MemeCreator.prototype.addBackground = function (src) {
-	
-	var errorCallback = function () {
-		this.errorLoadingBackgroundDiv.style.display = "inline-block";
-	};
-	
-	this.player.addBackground(src, false, errorCallback);
+MemeCreator.prototype.addBackground = function (thing, resize) {
 
-};
+	if (!this.player.meme) return
+
+	this.player.meme.background = {thing} 
+	
+	this.player.loadBackground(img => {
+		if (resize) {
+			var ratio
+			if (img.width > img.height) {
+				ratio = 640 / img.width
+				this.player.meme.width = 640
+				this.player.meme.height = img.height * ratio	
+			}
+			else {
+				ratio = 480 / img.height
+				this.player.meme.width = img.width * ratio
+				this.player.meme.height = 480	
+			}
+			this.player.sizeCanvas()
+		}
+	})
+}
 
 MemeCreator.prototype.showCharactersTab = function (tab) {
 	this.preview = undefined
@@ -1285,7 +1299,7 @@ MemeCreator.prototype.useThing = function (thingId) {
 	
 	omg.server.getId(thingId, thing => {
 		if (thing.type === "IMAGE") {
-			this.addBackground(thing)
+			this.addBackground(thing, true)
 		}
 		else if (thing.type === "SONG") {
 			this.player.meme.length = 5000
@@ -1564,7 +1578,7 @@ MemeCreator.prototype.setupDropBackground = function () {
 			//	"<font color='green'>Uploaded</font>" : ("<font color='red'>Error</font> " + res.error)
 
 			if (res && res.success) {
-				this.addBackground({type: "IMAGE", url: window.location.origin + res.filename})
+				this.addBackground({type: "IMAGE", url: window.location.origin + res.filename}, true)
 			}
 		});
 	}

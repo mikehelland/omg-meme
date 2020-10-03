@@ -32,8 +32,8 @@ function OMemePlayer(config) {
 
 	this.layerExtras = new Map()
 
-	this.width = 480 || config.width;
-	this.height = 320 || config.height;
+	this.width = 640 || config.width;
+	this.height = 480 || config.height;
 	
 	sceneCanvas.style.boxSizing = "border-box"
 	sceneCanvas.style.width = "100%" 
@@ -58,7 +58,6 @@ function OMemePlayer(config) {
 		controlsCanvas.style.position = "absolute"
 		controlsCanvas.style.bottom = "0px";
 		controlsCanvas.style.boxSizing = "border-box"
-		console.log(sceneCanvas.width)
 		controlsCanvas.style.width = sceneCanvas.width 
 		controlsCanvas.width = controlsCanvas.clientWidth;
 	
@@ -82,6 +81,7 @@ function OMemePlayer(config) {
 OMemePlayer.prototype.load = function(meme) {
 
 	this.meme = meme
+	this.sizeCanvas()
 	
 	this.musicPlayersToLoad = 0
 
@@ -123,6 +123,7 @@ OMemePlayer.prototype.load = function(meme) {
 
 OMemePlayer.prototype.loadPreview = function (meme) {
 	this.meme = meme
+	this.sizeCanvas()
 	this.loadBackground(() => {
 		this.drawBackground()
 
@@ -700,22 +701,16 @@ OMemePlayer.prototype.loadBackground = function(onload) {
 	var background = this.meme.background
 	if (background && background.thing && background.thing.url) {
 		this.backgroundImg = new Image()
-		this.backgroundImg.onload = onload
+		this.backgroundImg.onload = () => {
+			if (onload) onload(this.backgroundImg)
+		}
 		this.backgroundImg.src = background.thing.url
 	}
 	else {
-		if (onload) onload()
+		if (onload) onload(this.backgroundImg)
 	}
 }
 
-OMemePlayer.prototype.addBackground = function(thing, callback, errorCallback){
-
-	if (!this.meme) return
-
-	this.meme.background = {thing} 
-	
-	this.loadBackground()
-}
 
 OMemePlayer.prototype.previewDoodle = function (doodle) {
 	
@@ -868,7 +863,12 @@ OMemePlayer.prototype.loadSoundtrack = function (soundtrack, player) {
 }
 
 OMemePlayer.prototype.sizeCanvas = function () {
-	var memeRatio = this.width / this.height
+	if (this.meme) {
+		this.canvas.width = this.meme.width
+		this.canvas.height = this.meme.height
+	}
+	//var memeRatio = this.width / this.height
+	var memeRatio = this.canvas.width / this.canvas.height
 	var canvasRatio = this.canvas.clientWidth / this.canvas.clientHeight
 
 	var shouldBe, padding
