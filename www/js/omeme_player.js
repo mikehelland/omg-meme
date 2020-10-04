@@ -47,10 +47,6 @@ function OMemePlayer(config) {
 
 	controlsCanvas.width = controlsCanvas.clientWidth;
 	
-	sceneCanvas.style.borderWidth = "1px";
-	sceneCanvas.style.borderColor = "black";
-	sceneCanvas.style.borderStyle = "solid";
-	
 	sceneCanvas.style.display = "block";
 	controlsCanvas.style.display = "block";
 	
