@@ -311,7 +311,11 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 			div = obj.div
 		}
 
-		let layer = this.addSoundtrack(data)
+		let layer = this.addSoundtrack(data, v.embedViewer.player)
+
+		if (!v.embedViewer.player) {
+			v.embedViewer.setPlayer(this.player.layerExtras.get(layer).musicPlayer)
+		}
 		
 		this.preview = layer
 		this.player.preview = layer	
