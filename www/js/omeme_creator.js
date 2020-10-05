@@ -1563,6 +1563,7 @@ MemeCreator.prototype.setupDropBackground = function () {
 				omg.server.post(this.meme, res => {
 					this.meme.id = res.id
 					this.meme.user_id = res.user_id
+					this.meme.username = res.username
 					handleDroppedItems(items)
 				})
 			}
