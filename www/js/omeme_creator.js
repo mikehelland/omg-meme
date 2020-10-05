@@ -166,6 +166,9 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 	newRow.onclick = () => {
 		this.addCharacterFromFile(detail);
 
+		this.highlightDiv(newRow)
+
+
 		if (finishCallback) {
 			finishCallback();
 		}
@@ -226,14 +229,10 @@ MemeCreator.prototype.addCharacterFromFile = function (thing) {
 		//errorLoadingDiv.style.display = "inline-block";
 	};
 	var loadCallback = (character) => {
-		this.meme.layers.push(character)
-		var layerDiv = this.makeLayerDiv(character)
-		this.makeCharacterButton(character, layerDiv);
 		
 		this.preview = character
 		this.player.preview = character
 
-		this.highlightDiv(layerDiv.div)
 	};
 	
 	this.player.newCharacter(thing, loadCallback, errorCallback);
@@ -790,6 +789,12 @@ MemeCanvasEventHandler.prototype.characterStartTouch = function (x, y) {
 		actions[char.i][2] < time) ? 1 : 0;
 	actions.splice(char.i, cuts, [x - this.offX, y - this.offY, time]);
 
+	if (this.player.meme.layers.indexOf(this.memeCreator.preview) === -1) {
+		var layerDiv = this.memeCreator.makeLayerDiv(char)
+		this.memeCreator.makeCharacterButton(char, layerDiv);
+		this.player.meme.layers.push(char)
+		this.memeCreator.highlightDiv(layerDiv.div)
+	}
 }
 
 MemeCanvasEventHandler.prototype.soundtrackStartTouch = function (x, y, tool) {
