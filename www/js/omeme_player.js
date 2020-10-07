@@ -141,21 +141,6 @@ OMemePlayer.prototype.loadPreview = function (meme) {
 	})
 }
 
-OMemePlayer.prototype.newCharacter = function (thing, callback, errorCallback) {
-	
-	var char = {
-		type: "CHARACTER",
-		sprites: [], spriteI:0, spriteChanges: [],
-		i:0, actions:[],
-		centerX: 0, 
-		centerY: 0,
-		thing: thing
-	}
-
-	this.loadCharacter(char, callback, errorCallback)
-	return char;
-}
-
 OMemePlayer.prototype.setupControls = function () {
 	
 	var setOffsets = () => {
@@ -272,6 +257,8 @@ OMemePlayer.prototype.play = function() {
 	this.updateIs = true
 	this.started =  Date.now() //+ preroll;
 	this.paused = false;
+	
+	this.lastFrameChange = this.started
 	
 	this.hasPlayed = true;
 }
@@ -400,6 +387,14 @@ OMemePlayer.prototype.animateCharacter = function (char, nowInLoop) {
 			while (char.i+1 < pxdata.length && pxdata[char.i+1][2] < nowInLoop){
 				char.i++;
 			}
+		}
+		if (char.thing.type === "SPRITE") {
+			let spriter = this.layerExtras.get(char).spriter
+			if (!spriter.lastFrameChange || this.position - spriter.lastFrameChange > 250) {
+				spriter.next()
+				spriter.lastFrameChange = this.position
+			}
+			
 		}
 		this.drawCharacter(char, 
 			pxdata[char.i][0], pxdata[char.i][1], this.context);
@@ -535,32 +530,42 @@ OMemePlayer.prototype.drawControls = function() {
 
 OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
 
-	char.img = new Image();
-	var img = char.img
-	char.sprites = [img];
-		
-	img.onerror = function(){
-		char.loading = false
-		if (errorCallback)
-			errorCallback();
-	};
-	img.onload = function(){
-		char.loading = false
-		
-		char.centerX = img.width / 2; 
-		char.centerY = img.height / 2;
-		char.currentSprite = 0
+	let extras = {}
 
-		//loadSprite(charI, 0);
-		//turnOnSprite(0);
-		
+	if (char.thing.type === "IMAGE") {
+		char.img = new Image();
+		var img = char.img
+		char.sprites = [img];
+			
+		img.onerror = function(){
+			char.loading = false
+			if (errorCallback)
+				errorCallback();
+		};
+		img.onload = function(){
+			char.loading = false
+			
+			char.centerX = img.width / 2; 
+			char.centerY = img.height / 2;
+			char.currentSprite = 0
+			
+			if (callback)
+				callback(char);
+			
+		};
+
+		char.loading = img
+		img.src = char.thing.url;
+	}
+	else if (char.thing.type === "SPRITE") {
+		extras.spriter = new OMGSpriter(char.thing, this.canvas)
+		extras.spriter.setSheet()
+		console.log(extras.spriter.img)
 		if (callback)
 			callback(char);
-		
-	};
-
-	char.loading = img
-	img.src = char.thing.url;
+			
+	}
+	this.layerExtras.set(char, extras)
 }
 
 
@@ -608,8 +613,14 @@ OMemePlayer.prototype.drawSelection = function (char, x, y, context) {
 	}
 }
 
-OMemePlayer.prototype.drawCharacter = function (char, x, y, context){
-	if (char.sprites){
+OMemePlayer.prototype.drawCharacter = function (char, x, y, context) {
+	if (char.thing.type === "SPRITE") {
+		let spriter = this.layerExtras.get(char).spriter
+		spriter.x = context.canvas.width * x - spriter.frameWidth/2
+		spriter.y = context.canvas.height * y - spriter.frameHeight/2
+		spriter.draw()
+	}
+	else if (char.sprites){
 		if (char.sprites[char.currentSprite]){
 			var img = char.sprites[char.currentSprite];
 			if (char.zoom){

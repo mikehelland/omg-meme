@@ -157,16 +157,26 @@ MemeCreator.prototype.loadBackgroundRow = function (detail) {
 };
 
 MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
-	
-	var newRow = document.createElement("img"); 
-	newRow.className = "background-thumbnail";
-	
-	newRow.src = detail.url //detail.thumbnail;
-	
-	newRow.onclick = () => {
+
+	var newChar
+	if (detail.type === "IMAGE") {
+		newChar = document.createElement("img"); 
+		newChar.className = "background-thumbnail";
+		newChar.src = detail.url //detail.thumbnail;
+	}
+	else if (detail.type === "SPRITE") {
+		newChar = document.createElement("canvas"); 
+		newChar.className = "background-thumbnail";
+		newChar.width = detail.frameWidth
+		newChar.height = detail.frameHeight
+		let spriter = new OMGSpriter(detail, newChar)
+		spriter.setSheet()
+	}
+
+	newChar.onclick = () => {
 		this.addCharacterFromFile(detail);
 
-		this.highlightDiv(newRow)
+		this.highlightDiv(newChar)
 
 
 		if (finishCallback) {
@@ -174,7 +184,7 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 		}
 	};	
 	
-	return newRow;
+	return newChar;
 };
 
 MemeCreator.prototype.addBackground = function (thing, resize) {
@@ -208,18 +218,24 @@ MemeCreator.prototype.showCharactersTab = function (tab) {
 	if (tab.shown)
 		return;
 
-	var userList = tab.pageDiv.getElementsByClassName("recent-character-list")[0];
-
-	var searchBox = this.makeSearchBox(["SPRITE", "IMAGE", "IMAGESET", "TILESET"])
-	userList.appendChild(searchBox.div)
-	
-	omg.server.getHTTP("/data/?type=IMAGE", (results) => {
-		var details = results;
-		for (var idtl = 0; idtl < details.length; idtl++) {
-			var newRow = this.loadCharacterRow(details[idtl], tab.pageDiv.finishCallback)
-			userList.appendChild(newRow);
+	var loadResults = results => {
+		list.innerHTML = ""
+		for (var idtl = 0; idtl < results.length; idtl++) {
+			try {
+				var newRow = this.loadCharacterRow(results[idtl], tab.pageDiv.finishCallback)
+				list.appendChild(newRow);
+			}
+			catch (e) {console.error(e)}
 		}
-	});
+	}
+
+	var searchBox = this.makeSearchBox(["SPRITE", "IMAGE", "IMAGESET", "TILESET"], null, loadResults)
+	tab.pageDiv.appendChild(searchBox.div)
+
+	var list = document.createElement("div")
+	tab.pageDiv.appendChild(list)
+	
+	omg.server.getHTTP("/data/?type=SPRITE", loadResults);
 };
 
 MemeCreator.prototype.addCharacterFromFile = function (thing) {
@@ -228,14 +244,24 @@ MemeCreator.prototype.addCharacterFromFile = function (thing) {
 		console.error("did not make character from file")
 		//errorLoadingDiv.style.display = "inline-block";
 	};
-	var loadCallback = (character) => {
+	var callback = (character) => {
 		
 		this.preview = character
 		this.player.preview = character
 
 	};
+		
+	var char = {
+		type: "CHARACTER",
+		sprites: [], spriteI:0, spriteChanges: [],
+		i:0, actions:[],
+		centerX: 0, 
+		centerY: 0,
+		thing: thing
+	}
+
+	this.player.loadCharacter(char, callback, errorCallback)
 	
-	this.player.newCharacter(thing, loadCallback, errorCallback);
 };
 
 MemeCreator.prototype.makeCharacterButton = function (character, layer){
@@ -650,13 +676,17 @@ function MemeCanvasEventHandler(memeCreator) {
 			var x = ev.pageX - this.canvasOffsetLeft;
 			var y = ev.pageY - this.canvasOffsetTop;
 			tool.move(x, y);
-			player.preview.x = -1;
-			player.preview.y = -1;
-			player.preview.drawSelection = false;
+			if (player.preview) {
+				player.preview.x = -1;
+				player.preview.y = -1;
+				player.preview.drawSelection = false;
+			}
 		}
 		else if (this.memeCreator.mode === "DIALOG" || this.memeCreator.mode === "DOODLE") {
-			player.preview.x = -1;
-			player.preview.y = -1;
+			if (player.preview) {
+				player.preview.x = -1;
+				player.preview.y = -1;
+			}
 		}
 		
 	};
@@ -1008,7 +1038,7 @@ MemeCreator.prototype.setupCanvasEvents = function () {
 	this.canvasEventHandler = tool
 }
 
-MemeCreator.prototype.makeSearchBox = function (types, onclickcontent) {
+MemeCreator.prototype.makeSearchBox = function (types, onclickcontent, callback) {
 	var html = `
 		<div class="feed-options">
             <select class="search-user">
@@ -1048,7 +1078,7 @@ MemeCreator.prototype.makeSearchBox = function (types, onclickcontent) {
 		let params = {type: searchType.value, resultList, 
 			viewerParams: {maxHeight:60, viewMode: "MICRO", onclickcontent}}
 
-		omg.search(params, true)
+		omg.search(params, callback || true)
 	}
 
 	return searchBox

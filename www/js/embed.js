@@ -23,7 +23,7 @@ function OMGEmbeddedViewerMEME(viewer) {
         viewer.embedDiv.style.height = viewer.params.maxHeight + "px"
     }
 
-    let scripts = ["/apps/meme/js/omeme_player.js"]
+    let scripts = ["/apps/meme/js/omeme_player.js", "/apps/sprite/spriter.js"]
     
     let autoPlay = viewer.params.autoPlay
     for (var i = 0; i < data.layers.length; i++) {
