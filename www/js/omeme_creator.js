@@ -269,10 +269,14 @@ MemeCreator.prototype.makeCharacterButton = function (character, layer){
 	var newCanvas = document.createElement("canvas");	
 	newCanvas.height = 40;
 	newCanvas.width = 40;
-	
+
+	var spriter = new OMGSpriter(character.thing, newCanvas)
+	spriter.h = 40
+	spriter.w = 40
 	var draw = () => {
-		this.player.drawCharacter(character, 
-			0.5, 0.5, newCanvas.getContext("2d"));
+		spriter.draw()
+		//this.player.drawCharacter(character, 
+		//	0.5, 0.5, newCanvas.getContext("2d"));
 	}
 
 	if (character.loading) {
