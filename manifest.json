@@ -1,6 +1,6 @@
 {
     "activities": [
 		{"name": "MemeMaker", "url": "editor.htm", "edits": ["MEME"], "uses": ["IMAGE","SONG"]},
-		{"name": "Embedded Meme Viewer", "url": "js/embed.js", "embeds": ["MEME"]}
+		{"name": "Embedded Meme Viewer", "url": "js/embed.js", "className": "OMGEmbeddedViewerMEME", "embeds": ["MEME"]}
 	]
 }

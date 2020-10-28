@@ -1,8 +1,3 @@
-if (typeof omg === "object" && omg.types) {
-    if (omg.types["MEME"]) {
-        omg.types["MEME"].embedClass = OMGEmbeddedViewerMEME
-    }
-}
 
 function OMGEmbeddedViewerMEME(viewer) {
     var data = viewer.data
