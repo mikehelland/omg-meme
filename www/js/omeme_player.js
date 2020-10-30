@@ -124,9 +124,13 @@ OMemePlayer.prototype.loadPreview = function (meme) {
 		this.drawBackground()
 
 		this.meme.layers.forEach(layer => {
+			if (layer.disabled) {
+				return
+			}
+
 			switch(layer.type) {
 				case "CHARACTER":
-					//this.animateCharacter(layer, 0)
+					this.loadCharacter(layer, () => this.animateCharacter(layer, 0))
 					break;
 				case "DIALOG":
 					layer.i = 0
@@ -306,6 +310,10 @@ OMemePlayer.prototype.animate = function() {
 			if (this.updateIs) {
 				this.meme.layers[this._animate_i].i = 0
 			}
+
+			if (this.meme.layers[this._animate_i].disabled) {
+				continue
+			}
 		
 			switch(this.meme.layers[this._animate_i].type) {
 				case "CHARACTER":
@@ -390,7 +398,8 @@ OMemePlayer.prototype.animateCharacter = function (char, nowInLoop) {
 		}
 		if (char.thing.type === "SPRITE") {
 			let spriter = this.layerExtras.get(char).spriter
-			if (!spriter.lastFrameChange || this.position - spriter.lastFrameChange > 250) {
+			//if (this.updateIs || !spriter.lastFrameChange || this.position - spriter.lastFrameChange > 250) {
+			if (this.position - spriter.lastFrameChange > 250) {
 				spriter.next()
 				spriter.lastFrameChange = this.position
 			}
@@ -531,6 +540,7 @@ OMemePlayer.prototype.drawControls = function() {
 OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
 
 	let extras = {}
+	this.layerExtras.set(char, extras)
 
 	if (char.thing.type === "IMAGE") {
 		char.img = new Image();
@@ -560,12 +570,10 @@ OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
 	else if (char.thing.type === "SPRITE") {
 		extras.spriter = new OMGSpriter(char.thing, this.canvas)
 		extras.spriter.setSheet()
-		console.log(extras.spriter.img)
 		if (callback)
 			callback(char);
 			
 	}
-	this.layerExtras.set(char, extras)
 }
 
 

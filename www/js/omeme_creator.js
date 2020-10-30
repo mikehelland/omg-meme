@@ -1094,6 +1094,10 @@ MemeCreator.prototype.makeLayerDiv = function (layer) {
 	var div = document.createElement('div')
 	div.className = "meme-layer-controls"
 	
+	if (layer.disabled) {
+		div.style.opacity = 0.5
+	}
+
 	this.layersDiv.appendChild(div)
 
 	var header = document.createElement("div")
@@ -1300,6 +1304,11 @@ MemeCreator.prototype.fillRoundedRect = function (x, y, w, h, r, context) {
 MemeCreator.prototype.showLayerContextMenu = function (e, layer, div) {
 	e.preventDefault()
 
+	var hideMenu = () => {
+		document.body.removeChild(menu)
+		fullscreenWindow.style.display = "none";
+	}
+
 	var menu = document.createElement("div")
 	menu.className = "layer-context-menu"
 	menu.style.left = e.pageX + "px"
@@ -1314,12 +1323,32 @@ MemeCreator.prototype.showLayerContextMenu = function (e, layer, div) {
 	menu.appendChild(moveDownButton)
 	
 	var disableButton = document.createElement("div")
-	disableButton.innerHTML = "Disable"
+	disableButton.innerHTML = layer.disabled ? "Enable" : "Disable"
 	menu.appendChild(disableButton)
+	disableButton.onclick = e => {
+		if (layer.disabled) {
+			disableButton.innerHTML = "Disable"
+			div.style.opacity = 1
+		}
+		else {
+			disableButton.innerHTML = "Enable"
+			div.style.opacity = 0.5
+		}
+		layer.disabled = !layer.disabled
+		hideMenu()
+	}
 
 	var removeButton = document.createElement("div")
 	removeButton.innerHTML = "Delete"
 	menu.appendChild(removeButton)
+	removeButton.onclick = e => {
+		var i = this.meme.layers.indexOf(layer)
+		if (i > -1) {
+			this.meme.layers.splice(i, 1)
+			div.parentElement.removeChild(div)
+		}
+		hideMenu()
+	}
 
 	var fullscreenWindow = document.getElementById("fullscreen-window-background");
 	fullscreenWindow.style.display = "block";
