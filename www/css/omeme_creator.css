@@ -413,3 +413,7 @@ textarea {
 	flex-grow: 1;
 	margin-left:12px;
 }
+
+a {
+	color:white;
+}

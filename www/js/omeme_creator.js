@@ -343,7 +343,7 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 
 		let layer = this.addSoundtrack(data, v.embedViewer.player)
 
-		if (!v.embedViewer.player) {
+		if (!v.embedViewer.player && v.embedViewer.setPlayer) {
 			v.embedViewer.setPlayer(this.player.layerExtras.get(layer).musicPlayer)
 		}
 		
@@ -1578,7 +1578,7 @@ MemeCreator.prototype.setupSoundtrackRecording = function (clip) {
 			return
 		}
 
-		if (subbeat === 0) {
+		if (subbeat === 0 && this.isRemixerShowing) {
 			if (!clip.data.sections) {
 				clip.data.sections = []
 			}
