@@ -1672,7 +1672,7 @@ MemeCreator.prototype.setupDropBackground = function () {
 
 	var handleDroppedURI = (uri) => {
 
-		this.addBackground({type: "IMAGE", url: uri})
+		this.addBackground({type: "IMAGE", url: uri}, true)
 
 		//todo, what if this is a sound? or script?
 		/*omg.server.getHTTP("/util/mime-type?uri=" + encodeURIComponent(uri), res => {
