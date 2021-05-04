@@ -74,7 +74,7 @@ export default function OMemePlayer(config) {
 	}
 }
 
-OMemePlayer.prototype.load = function(meme) {
+OMemePlayer.prototype.load = async function(meme) {
 
 	this.meme = meme
 	this.sizeCanvas()
@@ -84,7 +84,7 @@ OMemePlayer.prototype.load = function(meme) {
 	if (!meme.layers) {
 		meme.layers = []	
 	}
-	meme.layers.forEach(layer => {
+	for (let layer of meme.layers) {
 		layer.i = 0 
 		switch (layer.type) {
 			case "CHARACTER":
@@ -95,11 +95,11 @@ OMemePlayer.prototype.load = function(meme) {
 					this.loadAudio(layer);
 				}
 				else {
-					this.loadSoundtrack(layer);
+					await this.loadSoundtrack(layer);
 				}
 				break;
 		}
-	})
+	}
 
 
 	this.loadBackground()

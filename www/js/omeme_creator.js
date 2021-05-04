@@ -554,14 +554,15 @@ MemeCreator.prototype.loadParameters = function () {
 			width: 480,
 			height: 320,
 			layers: []
+		}).then(() => {
+			this.onLoad()
 		})
-		this.onLoad()
 	}
 };
 
 MemeCreator.prototype.loadId = function (id) {
-	omg.server.getId(id, (response) => {
-		this.player.load(response);
+	omg.server.getId(id, async (response) => {
+		await this.player.load(response);
 		
 		this.onLoad()
 
@@ -1380,20 +1381,21 @@ MemeCreator.prototype.highlightDiv = function (div) {
 
 MemeCreator.prototype.useThing = function (thingId) {
 
-	this.player.load({
-		type: "MEME",
-		width: 480,
-		height: 320,
-		layers: []
-	})
-	
-	omg.server.getId(thingId, thing => {
+	omg.server.getId(thingId, async thing => {
+
+		await this.player.load({
+			type: "MEME",
+			width: 480,
+			height: 320,
+			layers: []
+		})
+
 		if (thing.type === "IMAGE") {
 			this.addBackground(thing, true)
 		}
 		else if (thing.type === "SONG") {
 			this.player.meme.length = 5000
-			var layer = this.addSoundtrack(thing)
+			var layer = await this.addSoundtrack(thing)
 			this.player.meme.layers.push(layer)
 			layer.actions.push({action: "play", time: 0, length: 5000})
 		}
@@ -1520,12 +1522,15 @@ MemeCreator.prototype.drawAudioCanvas = function (layer, canvas) {
 }
 
 MemeCreator.prototype.drawSoundtrackCanvas = function (layer, action) {
-	if (layer.thing.type === "AUDIO") {
-		this.drawAudioCanvas(layer, action.canvas)
-		return
-	}
+	try {
+		if (layer.thing.type === "AUDIO") {
+			this.drawAudioCanvas(layer, action.canvas)
+			return
+		}
 
-	this.musicDrawer.drawCanvas(layer.thing, action.canvas, action.data.totalSubbeats, action.data.sections)
+		this.musicDrawer.drawCanvas(layer.thing, action.canvas, action.data.totalSubbeats, action.data.sections)
+	}
+	catch (e) {console.error(e)}
 }
 
 MemeCreator.prototype.onLayerLoaded = function (layer, extras) {
