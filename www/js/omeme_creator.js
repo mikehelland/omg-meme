@@ -1,8 +1,10 @@
-"use strict";
+import OMGEmbeddedViewerMusicDrawer from "/apps/music/js/omusic-embed-draw.js"
+import OMGSpriter from "/apps/sprite/spriter.js"
+import OMemePlayer from "./omeme_player.js"
 
 //in June 2020 I revived this beast which was written well before ES6
-
-function MemeCreator(params) {	
+ 
+export default function MemeCreator(params) {	
 	this.url = "/apps/meme/" //todo make this smarter?
 	this.playerDiv = params.playerDiv
 	this.setupTabs();
@@ -156,7 +158,7 @@ MemeCreator.prototype.loadBackgroundRow = function (detail) {
 	return newRow;
 };
 
-MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
+MemeCreator.prototype.loadCharacterRow = function (detail, list, finishCallback) {
 
 	var newChar
 	if (detail.type === "IMAGE") {
@@ -170,8 +172,11 @@ MemeCreator.prototype.loadCharacterRow = function (detail, finishCallback) {
 		newChar.width = detail.frameWidth
 		newChar.height = detail.frameHeight
 		let spriter = new OMGSpriter(detail, newChar)
-		spriter.setSheet()
+		spriter.setSheet().then(()=>spriter.draw())
 	}
+
+	list.appendChild(newChar);
+	
 
 	newChar.onclick = () => {
 		this.addCharacterFromFile(detail);
@@ -222,8 +227,7 @@ MemeCreator.prototype.showCharactersTab = function (tab) {
 		list.innerHTML = ""
 		for (var idtl = 0; idtl < results.length; idtl++) {
 			try {
-				var newRow = this.loadCharacterRow(results[idtl], tab.pageDiv.finishCallback)
-				list.appendChild(newRow);
+				var newRow = this.loadCharacterRow(results[idtl], list, tab.pageDiv.finishCallback)
 			}
 			catch (e) {console.error(e)}
 		}

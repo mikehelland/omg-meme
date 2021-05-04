@@ -1,6 +1,6 @@
-"use strict";
+import OMGSpriter from "/apps/sprite/spriter.js"
 
-function OMemePlayer(config) {
+export default function OMemePlayer(config) {
 
 	if (!config || !config.div) {
 		console.warn("MemePlayer: no config.div?")

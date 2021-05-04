@@ -134,14 +134,12 @@
 
 	<script src="/apps/sprite/spriter.js"></script>
 
-	<script src="/apps/music/js/omusic-embed-draw.js"></script>
 	<script src="/apps/music/js/omusic_player.js"></script>
 	
 	<script src="js/omeme_player.js"></script>
-	<script src="js/omeme_creator.js"></script>
 
-	<script>
-
+	<script type="module">
+		import MemeCreator from "./js/omeme_creator.js"
 
 		var urlNextButton = document.getElementById("picture-url-next");
 		var step1 = document.getElementById("step-1");

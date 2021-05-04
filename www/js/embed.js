@@ -18,18 +18,16 @@ function OMGEmbeddedViewerMEME(viewer) {
         viewer.embedDiv.style.height = viewer.params.maxHeight + "px"
     }
 
-    let scripts = ["/apps/meme/js/omeme_player.js", "/apps/sprite/spriter.js"]
-    
     let autoPlay = viewer.params.autoPlay
     for (var i = 0; i < data.layers.length; i++) {
         if (data.layers[i].type === "SOUNDTRACK") {
             autoPlay = false
-            scripts.push("/apps/music/js/omusic_player.js")
             break
         }
     }
 
-    omg.util.loadScripts(scripts, () => {
+    import("/apps/meme/js/omeme_player.js").then(o => {
+        var OMemePlayer = o.default
         var mp = new OMemePlayer({div: this.playerHolder});
         mp.loadPreview(data)
         
