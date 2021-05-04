@@ -43,8 +43,6 @@ export default function OMemePlayer(config) {
 
 	controlsCanvas.style.width = "100%" 
 
-	this.sizeCanvas()
-
 	controlsCanvas.width = controlsCanvas.clientWidth;
 	
 	sceneCanvas.style.display = "block";
