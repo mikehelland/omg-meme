@@ -331,7 +331,7 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 		this.showRemixer()
 	}
 
-	var searchBox = this.makeSearchBox(["SONG","SOUNDSET"], (v, e) => {
+	var searchBox = this.makeSearchBox(["SONG","SOUNDSET"], async (v, e) => {
 
 		let data = v.data
 		let div = v.embedDiv
@@ -345,7 +345,7 @@ MemeCreator.prototype.showSoundsTab = function (tab) {
 			div = obj.div
 		}
 
-		let layer = this.addSoundtrack(data, v.embedViewer.player)
+		let layer = await this.addSoundtrack(data, v.embedViewer.player)
 
 		if (!v.embedViewer.player && v.embedViewer.setPlayer) {
 			v.embedViewer.setPlayer(this.player.layerExtras.get(layer).musicPlayer)
@@ -1402,7 +1402,7 @@ MemeCreator.prototype.useThing = function (thingId) {
 	})
 }
 
-MemeCreator.prototype.addSoundtrack = function (thing, player) {
+MemeCreator.prototype.addSoundtrack = async function (thing, player) {
 	var layer = {
 		type: "SOUNDTRACK",
 		actions:[],
@@ -1413,7 +1413,7 @@ MemeCreator.prototype.addSoundtrack = function (thing, player) {
 		this.player.loadAudio(layer)
 	}
 	else {
-		this.player.loadSoundtrack(layer, player)
+		await this.player.loadSoundtrack(layer, player)
 	}
 	return layer
 }

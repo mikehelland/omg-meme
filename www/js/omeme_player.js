@@ -848,7 +848,8 @@ OMemePlayer.prototype.loadAudio = function (soundtrack, nowInLoop) {
 	return extras
 }
 
-OMemePlayer.prototype.loadSoundtrack = function (soundtrack, player) {
+OMemePlayer.prototype.loadSoundtrack = async function (soundtrack, player) {
+	await this.loadMusicContext()
 	let extras = {}
 	if (player) {
 		extras.song = player.song
@@ -857,16 +858,13 @@ OMemePlayer.prototype.loadSoundtrack = function (soundtrack, player) {
 	else {
 		this.musicPlayersToLoad++
 		try {
-			let runOnload = false
-			extras.song = OMGSong.prototype.make(soundtrack.thing)
-			extras.musicPlayer = new OMusicPlayer()
-			extras.musicPlayer.prepareSong(extras.song, () => {
-				this.musicPlayersToLoad--
-				if (this.musicPlayersToLoad === 0) {
-					if (runOnload && this.onload) this.onload()
-				}
-			})	
-			runOnload = true
+			let {song, player} = await this.musicContext.load(soundtrack.thing) 
+			extras.song = song
+			extras.musicPlayer = player
+			this.musicPlayersToLoad--
+			if (this.musicPlayersToLoad === 0) {
+				if (this.onload) this.onload()
+			}
 		}
 		catch (e) {console.error(e)}
 	}
@@ -874,7 +872,6 @@ OMemePlayer.prototype.loadSoundtrack = function (soundtrack, player) {
 	extras.play = () => extras.musicPlayer.play()
 	extras.stop = () => extras.musicPlayer.stop()
 	this.layerExtras.set(soundtrack, extras)
-	return extras
 }
 
 OMemePlayer.prototype.sizeCanvas = function () {
@@ -920,5 +917,12 @@ OMemePlayer.prototype.sizeCanvas = function () {
 OMemePlayer.prototype.onLayerLoaded = function (layer, extras) {
 	if (this.onlayerloaded) {
 		this.onlayerloaded(layer, extras)
+	}
+}
+
+OMemePlayer.prototype.loadMusicContext = async function () {
+	if (!this.musicContext) {
+		var o = await import("/apps/music/js/omusic.js")
+		this.musicContext = new o.default()
 	}
 }

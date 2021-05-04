@@ -132,12 +132,6 @@
 
 	<script src="/js/embedded_viewer.js"></script>
 
-	<script src="/apps/sprite/spriter.js"></script>
-
-	<script src="/apps/music/js/omusic_player.js"></script>
-	
-	<script src="js/omeme_player.js"></script>
-
 	<script type="module">
 		import MemeCreator from "./js/omeme_creator.js"
 
@@ -154,7 +148,7 @@
 
 
 		var memeCreator = new MemeCreator({ playerDiv: memePlayerDiv });
-
+		window.memeCreator = memeCreator
 
 		function setupLayout(previewWindow) {
 			var div = previewWindow;
