@@ -540,6 +540,9 @@ OMemePlayer.prototype.loadCharacter = function (char, callback, errorCallback) {
 	let extras = {}
 	this.layerExtras.set(char, extras)
 
+	if (!char.scale) {
+		char.scale = 1
+	}
 	if (char.thing.type === "IMAGE") {
 		char.img = new Image();
 		var img = char.img

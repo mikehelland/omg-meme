@@ -404,12 +404,12 @@ textarea {
 	padding: 6px;
 }
 
-#background-page-url {
+#background-page-url, #character-page-url {
 	display:flex;
 	align-items: center;
 }
 
-#background-page-url-input {
+#background-page-url-input, #character-page-url-input {
 	flex-grow: 1;
 	margin-left:12px;
 }

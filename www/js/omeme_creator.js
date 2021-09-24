@@ -223,6 +223,17 @@ MemeCreator.prototype.showCharactersTab = function (tab) {
 	if (tab.shown)
 		return;
 
+	this.characterScaleInput = document.getElementById("character-scale")
+	
+	var urlInput = tab.pageDiv.getElementsByClassName("url-input")[0];
+	urlInput.onkeypress = e => {
+		if (e.keyCode === 13) {
+			this.addCharacterFromFile({type: "IMAGE", url: urlInput.value});
+
+		}
+	}
+	
+
 	var loadResults = results => {
 		list.innerHTML = ""
 		for (var idtl = 0; idtl < results.length; idtl++) {
@@ -261,7 +272,8 @@ MemeCreator.prototype.addCharacterFromFile = function (thing) {
 		i:0, actions:[],
 		centerX: 0, 
 		centerY: 0,
-		thing: thing
+		thing: thing,
+		scale: this.characterScaleInput.value * 1
 	}
 
 	this.player.loadCharacter(char, callback, errorCallback)
